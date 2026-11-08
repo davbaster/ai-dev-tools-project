@@ -22,7 +22,9 @@ class FakeBackend:
         path = request.url.path
         self.calls.append((request.method, path))
         if path == "/api/health":
-            return httpx.Response(200, json={"status": "ok", "deployment": "local"})
+            return httpx.Response(
+                200, json={"status": "ok", "deployment": "local", "version": "local"}
+            )
         if path == "/api/auth/login":
             if self.login_ok:
                 return httpx.Response(200, json={"token": TOKEN, "user": USER})

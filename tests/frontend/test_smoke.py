@@ -2,11 +2,13 @@
 
 import httpx
 
-from frontend.main import DEPLOYMENT
+from frontend.main import DEPLOYMENT, VERSION
 
 
 def health_ok(request):
-    return httpx.Response(200, json={"status": "ok", "deployment": "local"})
+    return httpx.Response(
+        200, json={"status": "ok", "deployment": "local", "version": "local"}
+    )
 
 
 def test_login_page_shows_app_name_and_backend_status(client, fake_backend):
@@ -49,7 +51,11 @@ def test_frontend_health_does_not_call_backend(client, fake_backend):
     fake_backend(fail)
     response = client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok", "deployment": DEPLOYMENT}
+    assert response.json() == {
+        "status": "ok",
+        "deployment": DEPLOYMENT,
+        "version": VERSION,
+    }
 
 
 def test_unknown_route_returns_404(client):

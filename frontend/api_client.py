@@ -22,7 +22,7 @@ OPERATIONS: dict[str, tuple[str, str]] = {
     "getDaily": ("GET", "/api/daily"),
 }
 
-TIMEOUT_SECONDS = 2.0
+DEFAULT_TIMEOUT_SECONDS = 2.0
 
 
 class BackendUnavailable(Exception):
@@ -40,9 +40,14 @@ class ApiResult:
 
 
 class BackendClient:
-    def __init__(self, base_url: str, transport: httpx.BaseTransport | None = None):
+    def __init__(
+        self,
+        base_url: str,
+        transport: httpx.BaseTransport | None = None,
+        timeout: float = DEFAULT_TIMEOUT_SECONDS,
+    ):
         self._client = httpx.Client(
-            base_url=base_url, timeout=TIMEOUT_SECONDS, transport=transport
+            base_url=base_url, timeout=timeout, transport=transport
         )
 
     def _call(

@@ -30,6 +30,7 @@ It is a course final project and a **proof of concept**: keep everything simple,
 | `_docs/agents/*.md` | When playing that role (PM, engineer, QA, on-call responder). |
 | `_docs/task-template.md` | When writing or grooming an issue. |
 | `_docs/testing-guidelines.md` | Before writing tests. |
+| `_docs/deploy.md` | Before touching `render.yaml`, the Dockerfile or the CD workflows. How a commit reaches dev, Render's free-plan limits, one-time manual steps. |
 
 `HANDOFF.md` is the short "where are we" snapshot (overwrite it). The log is the append-only history (never rewrite old entries).
 
@@ -70,6 +71,9 @@ The root `Makefile` is the single entry point, and CI calls the same targets. Pl
 - `make test-unit` / `make test-frontend` / `make test-contract` - one suite, no Docker needed
 - `make test-integration` - starts a throwaway Postgres (`docker-compose.test.yml`, port 5433, override with `TEST_DB_PORT=<port>`), runs the integration tests and removes it, even when they fail. `TEST_DATABASE_URL=<url>` uses that database instead (never the dev `para_luego` one)
 - `make build` - build the Docker images
+- `make image TAG=<sha>` / `make push-image TAG=<sha>` - build / push the deployable image `ghcr.io/davbaster/ai-dev-tools-project:<sha>` (and `:dev`) with `APP_VERSION=<sha>`
+- `make deploy-dev TAG=<sha>` - deploy that image to Render dev through the deploy hooks (`RENDER_DEV_BACKEND_DEPLOY_HOOK`, `RENDER_DEV_FRONTEND_DEPLOY_HOOK` from the environment; CD only)
+- `make wait-deploy TAG=<sha>` - wait until dev's health checks report that version
 - `make ci-local` - run `.github/workflows/ci.yml` locally with `act` (Docker image `catthehacker/ubuntu:act-latest`; the throwaway test database is reached as `host.docker.internal` through `TEST_DB_HOST`)
 - `make promote-prod` - open the PR from `main` to `prod` (production deploys when a human merges it)
 - `make rollback ENV=<dev|prod> TAG=<previous tag>` - redeploy a previous image

@@ -33,3 +33,8 @@ def get_database_url() -> str:
             "postgresql://user:password@localhost:5432/para_luego"
         )
     return to_psycopg_url(value)
+
+
+def get_version() -> str:
+    """Return APP_VERSION (the commit SHA baked into the image), or "local"."""
+    return os.environ.get("APP_VERSION", "").strip() or "local"

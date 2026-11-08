@@ -1,0 +1,73 @@
+# CD to dev: after CI passes on a push to main, build the image once, push it
+# to GHCR as :<sha> and :dev, deploy that exact image to Render dev and wait
+# until both services report the commit SHA. Logic lives in the Makefile.
+name: CD dev
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write
+
+# Two deploys to dev never overlap; a newer one waits for the running one.
+concurrency:
+  group: cd-dev
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: build, push, deploy to dev
+    # Only a green CI run from a push (never a PR) deploys.
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      TAG: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      # GHCR names must be lowercase (forks may have uppercase owners).
+      - name: Image name
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Build image
+        run: make image TAG="$TAG" IMAGE="$IMAGE"
+
+      - name: Push image
+        run: make push-image TAG="$TAG" IMAGE="$IMAGE"
+
+      # Forks or repos without the Render secrets skip the deploy, without failing.
+      - name: Check deploy hooks
+        id: hooks
+        env:
+          BACKEND_HOOK: ${{ secrets.RENDER_DEV_BACKEND_DEPLOY_HOOK }}
+          FRONTEND_HOOK: ${{ secrets.RENDER_DEV_FRONTEND_DEPLOY_HOOK }}
+        run: |
+          if [ -n "$BACKEND_HOOK" ] && [ -n "$FRONTEND_HOOK" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Render deploy hook secrets are not set; skipping the deploy to dev."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy to Render dev
+        if: steps.hooks.outputs.ready == 'true'
+        env:
+          RENDER_DEV_BACKEND_DEPLOY_HOOK: ${{ secrets.RENDER_DEV_BACKEND_DEPLOY_HOOK }}
+          RENDER_DEV_FRONTEND_DEPLOY_HOOK: ${{ secrets.RENDER_DEV_FRONTEND_DEPLOY_HOOK }}
+        run: make deploy-dev TAG="$TAG" IMAGE="$IMAGE"
+
+      - name: Wait until dev reports this commit
+        if: steps.hooks.outputs.ready == 'true'
+        run: make wait-deploy TAG="$TAG"

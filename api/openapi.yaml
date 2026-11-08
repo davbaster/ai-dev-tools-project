@@ -4,7 +4,7 @@
 openapi: 3.1.0
 info:
   title: Para Luego API
-  version: 0.4.0
+  version: 0.5.0
   description: JSON API served by the backend and called by the frontend.
 paths:
   /api/health:
@@ -333,7 +333,7 @@ components:
   schemas:
     Health:
       type: object
-      required: [status, deployment]
+      required: [status, deployment, version]
       properties:
         status:
           type: string
@@ -341,6 +341,9 @@ components:
         deployment:
           type: string
           enum: [local, dev, prod]
+        version:
+          type: string
+          description: Commit SHA baked into the image (APP_VERSION), or "local".
 
     RegisterRequest:
       type: object

@@ -5,10 +5,11 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from backend import auth, categories, daily, items
-from backend.config import get_deployment
+from backend.config import get_deployment, get_version
 
 # Validated at import time so the backend refuses to start with a bad value.
 DEPLOYMENT = get_deployment()
+VERSION = get_version()
 
 # Mensajes por campo para los 422 (en español, se muestran en el frontend).
 FIELD_MESSAGES = {
@@ -53,4 +54,4 @@ def validation_error(request: Request, exc: RequestValidationError) -> JSONRespo
 
 @app.get("/api/health")
 def get_health() -> dict[str, str]:
-    return {"status": "ok", "deployment": DEPLOYMENT}
+    return {"status": "ok", "deployment": DEPLOYMENT, "version": VERSION}
