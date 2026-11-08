@@ -44,3 +44,22 @@ def get_backend_timeout() -> float:
             f"Invalid BACKEND_TIMEOUT_SECONDS={raw!r}. Use a number of seconds above 0."
         )
     return value
+
+
+def get_backend_wake_seconds() -> float:
+    """Seconds to keep retrying while a sleeping backend wakes up.
+
+    BACKEND_WAKE_SECONDS, default 0 (no retries, as locally); Render sets 60.
+    """
+    raw = os.environ.get("BACKEND_WAKE_SECONDS", "").strip()
+    if not raw:
+        return 0.0
+    try:
+        value = float(raw)
+    except ValueError:
+        value = -1
+    if value < 0:
+        raise ValueError(
+            f"Invalid BACKEND_WAKE_SECONDS={raw!r}. Use a number of seconds, 0 or more."
+        )
+    return value

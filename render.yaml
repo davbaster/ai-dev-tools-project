@@ -43,8 +43,12 @@ services:
         value: "8000"
       - key: BACKEND_URL
         value: https://para-luego-dev-backend.onrender.com
-      # A sleeping free backend takes about a minute to wake up.
+      # A sleeping free backend takes about a minute to wake up, and while it
+      # wakes Render answers the frontend's calls with quick errors: wait for
+      # each call up to 60 s and keep retrying GETs for up to 60 s.
       - key: BACKEND_TIMEOUT_SECONDS
+        value: "60"
+      - key: BACKEND_WAKE_SECONDS
         value: "60"
 
 databases:

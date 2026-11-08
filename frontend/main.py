@@ -12,6 +12,7 @@ from frontend.api_client import BackendClient, BackendUnavailable
 from frontend.config import (
     get_backend_timeout,
     get_backend_url,
+    get_backend_wake_seconds,
     get_deployment,
     get_version,
 )
@@ -21,6 +22,7 @@ from frontend.share import share_text, whatsapp_url
 DEPLOYMENT = get_deployment()
 BACKEND_URL = get_backend_url()
 BACKEND_TIMEOUT = get_backend_timeout()
+BACKEND_WAKE_SECONDS = get_backend_wake_seconds()
 VERSION = get_version()
 
 SESSION_COOKIE = "pl_session"
@@ -38,7 +40,9 @@ app = FastAPI(title="Para Luego", docs_url=None, redoc_url=None, openapi_url=Non
 
 def get_backend_client() -> BackendClient:
     # Los tests lo reemplazan con app.dependency_overrides para simular el backend.
-    return BackendClient(BACKEND_URL, timeout=BACKEND_TIMEOUT)
+    return BackendClient(
+        BACKEND_URL, timeout=BACKEND_TIMEOUT, wake_seconds=BACKEND_WAKE_SECONDS
+    )
 
 
 Backend = Annotated[BackendClient, Depends(get_backend_client)]
