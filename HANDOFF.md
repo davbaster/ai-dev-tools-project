@@ -2,31 +2,29 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-08, by the orchestrator session (#23 implemented, QA PASS, PR #24 open)
+**Last updated:** 2026-11-08, by the orchestrator session (#23 merged)
 
 ## Current state
 
-- **Architecture change (2026-11-08):** the app is split into `backend/` (JSON API under `/api/...`, owns Postgres) and `frontend/` (FastAPI + Jinja2 pages), talking only through `api/openapi.yaml` (contract-first). `_docs/plan.md` (sections 4, 5, 6, 9, 11), `AGENTS.md` (layout, commands, a new rules block) and `_docs/testing-guidelines.md` (contract layer) are updated. The code split is on PR #24 (not merged yet).
+- **Architecture change (2026-11-08):** the app is split into `backend/` (JSON API under `/api/...`, owns Postgres) and `frontend/` (FastAPI + Jinja2 pages), talking only through `api/openapi.yaml` (contract-first). `_docs/plan.md` (sections 4, 5, 6, 9, 11), `AGENTS.md` (layout, commands, a new rules block) and `_docs/testing-guidelines.md` (contract layer) are updated. The code split is merged (PR #24).
 - Planning done. Agent docs written (`AGENTS.md`, `_docs/`).
 - Docs committed and pushed to `davbaster/ai-dev-tools-project`.
 - Labels from `_docs/process.md` created: `backlog`, `groomed`, `in-progress`, `qa-pass`, `qa-fail`, `incident`, `needs-human`.
 - Issues #1-#20 created from the backlog seed (`_docs/plan.md` section 11), numbered in the same order. #2-#20 are labeled `backlog`.
 - #1 (repo scaffold): groomed, approved by David (with `httpx`), implemented on `1-repo-scaffold`, **QA: PASS**, PR #21 merged into `main` by the orchestrator with David's OK (no CI yet). #1 is closed, branch deleted.
 - #2 (Docker Compose with app + Postgres): groomed, approved by David, implemented on `2-docker-compose`, **QA: PASS**, PR #22 merged into `main` with David's OK (no CI yet). #2 is closed, branch deleted.
-- #23 (split into frontend and backend with `api/openapi.yaml`): groomed, approved by David (with `httpx` runtime and `pyyaml` dev), implemented on `23-frontend-backend-split`, **QA: PASS** (labels `groomed`, `qa-pass`). PR #24 is open, not merged. Comments about the split posted on #3-#8, #11, #13, #18.
-- Code on `main`: single `app/` (until PR #24 merges). On the #23 branch: `api/openapi.yaml` (`GET /api/health`), `backend/` (JSON API), `frontend/` (Jinja2 page + `httpx` client with an `OPERATIONS` table), 27 tests (unit, frontend, contract), Compose with `frontend` (8000) + `backend` (8001) + `db`. Makefile targets: `help`, `install`, `dev-backend`, `dev-frontend`, `lint`, `format`, `test`, `build`, `up`, `down`, `logs`.
+- #23 (split into frontend and backend with `api/openapi.yaml`): groomed, approved by David (with `httpx` runtime and `pyyaml` dev), implemented on `23-frontend-backend-split`, **QA: PASS**, PR #24 merged into `main` with David's OK (no CI yet). #23 is closed, branch deleted. Comments about the split posted on #3-#8, #11, #13, #18.
+- Code on `main`: `api/openapi.yaml` (`GET /api/health`), `backend/` (JSON API), `frontend/` (Jinja2 page + `httpx` client with an `OPERATIONS` table), 27 tests (unit, frontend, contract), Compose with `frontend` (8000) + `backend` (8001) + `db`. Makefile targets: `help`, `install`, `dev-backend`, `dev-frontend`, `lint`, `format`, `test`, `build`, `up`, `down`, `logs`.
 - Deadline: **Friday 2026-11-13** (Costa Rica time). Peer reviews of three other projects are also required to pass.
 
 ## In progress
 
-- PR #24 waits for David's OK to merge (no CI yet).
+- Nothing.
 
 ## Next up
 
-1. David approves merging PR #24; the orchestrator merges it (closes #23).
-2. PM grooms #3 (database models and Alembic migrations, in `backend/`). It will need new dependencies (SQLAlchemy, Alembic, a Postgres driver), which David must approve.
-
-Order note: #23 goes before #3 even though its number is higher. #3-#8, #11, #13 and #18 depend on it.
+1. PM grooms #3 (database models and Alembic migrations, in `backend/`). It will need new dependencies (SQLAlchemy, Alembic, a Postgres driver), which David must approve.
+2. Implement, QA and merge #3 following `_docs/process.md`.
 
 ## Decisions
 
