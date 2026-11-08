@@ -83,9 +83,6 @@ Per-folder commands (run from the repo root):
 - `uv run alembic upgrade head` - apply migrations (needs `DATABASE_URL`)
 - `uv run uvicorn backend.main:app --reload --port 8001` - backend dev server (needs `DATABASE_URL` and `DEPLOYMENT=local`)
 - `uv run uvicorn frontend.main:app --reload --port 8000` - frontend dev server (needs `BACKEND_URL=http://localhost:8001` and `DEPLOYMENT=local`)
-
-(The scaffold still has a single `app/` until #23 splits it.)
-
 ## Rules
 
 **Dependencies**

@@ -2,16 +2,19 @@
 # Compatible with GNU Make 3.81 (no .ONESHELL or newer features).
 
 .DEFAULT_GOAL := help
-.PHONY: help install dev lint format test build up down logs
+.PHONY: help install dev-backend dev-frontend lint format test build up down logs
 
 help: ## List every target
-	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  %-10s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  %-13s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 install: ## Install dependencies from uv.lock (fails if the lock is out of date)
 	uv sync --locked
 
-dev: ## Run the app with reload on http://localhost:8000
-	uv run uvicorn app.main:app --reload --port 8000
+dev-backend: ## Run the backend API with reload on http://localhost:8001
+	uv run uvicorn backend.main:app --reload --port 8001
+
+dev-frontend: ## Run the frontend with reload on http://localhost:8000 (needs the backend)
+	uv run uvicorn frontend.main:app --reload --port 8000
 
 lint: ## Lint and check formatting with ruff
 	uv run ruff check .
@@ -21,7 +24,7 @@ format: ## Format and auto-fix with ruff
 	uv run ruff format .
 	uv run ruff check --fix .
 
-test: ## Run the test suite
+test: ## Run the unit, frontend and contract tests
 	uv run pytest
 
 build: ## Build the Docker images
@@ -33,5 +36,5 @@ up: ## Start the local system in Docker and wait until it is healthy
 down: ## Stop and remove the containers (the database volume is kept)
 	docker compose down
 
-logs: ## Follow the app logs (Ctrl+C to stop)
-	docker compose logs -f app
+logs: ## Follow the frontend and backend logs (Ctrl+C to stop)
+	docker compose logs -f frontend backend

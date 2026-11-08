@@ -2,6 +2,10 @@
 # Los valores por defecto de Postgres son SOLO para uso local; nunca usarlos en dev/prod.
 name: para-luego
 
+x-app-image: &app-image
+  build: .
+  image: para-luego-app
+
 services:
   db:
     image: postgres:16
@@ -19,17 +23,41 @@ services:
       timeout: 3s
       retries: 30
 
-  app:
-    build: .
-    image: para-luego-app
+  # API JSON; el único servicio que habla con Postgres.
+  backend:
+    <<: *app-image
+    command: ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8001"]
     environment:
       DEPLOYMENT: ${DEPLOYMENT:-local}
-      # La app lo usa a partir de #3.
+      # El backend lo usa a partir de #3.
       DATABASE_URL: postgresql://${POSTGRES_USER:-para_luego}:${POSTGRES_PASSWORD:-para_luego_local}@db:5432/${POSTGRES_DB:-para_luego}
     ports:
-      - "${APP_PORT:-8000}:8000"
+      - "${BACKEND_PORT:-8001}:8001"
     depends_on:
       db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/api/health', timeout=2)"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  # Páginas HTML; obtiene los datos solo a través de la API del backend.
+  frontend:
+    <<: *app-image
+    command: ["uvicorn", "frontend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    environment:
+      DEPLOYMENT: ${DEPLOYMENT:-local}
+      BACKEND_URL: http://backend:8001
+    ports:
+      - "${FRONTEND_PORT:-8000}:8000"
+    # Con el backend detenido, el DNS de Docker tarda ~4 s en fallar y el timeout de
+    # httpx no cubre la resolución DNS; esto la acota a ~1 s.
+    dns_opt:
+      - timeout:1
+      - attempts:1
+    depends_on:
+      backend:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2)"]
