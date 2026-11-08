@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-08, by the orchestrator session (#4 merged)
+**Last updated:** 2026-11-08, by the orchestrator session (#4 merged; #6 and #5 groomed)
 
 ## Current state
 
@@ -18,16 +18,19 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 - Code on `main`: `api/openapi.yaml` (health + auth operations), `backend/` (JSON API, `models.py`, `db.py`, `security.py`, `auth.py`), `migrations/` (`0001` users/categories/items/incidents, `0002` auth_tokens), `frontend/` (Spanish login/register/home pages, `pl_session` cookie, `httpx` client with an `OPERATIONS` table), 60 tests (unit, frontend, contract) + 21 integration tests, Compose with `frontend` (8000) + `backend` (8001, runs migrations before serving) + `db`. Makefile targets: `help`, `install`, `dev-backend`, `dev-frontend`, `lint`, `format`, `test`, `test-integration`, `migrate`, `build`, `up`, `down`, `logs`.
 - #4 (registration, login, logout): groomed, approved by David, implemented on `4-auth`, **QA: PASS**, PR #27 merged into `main` with David's OK (no CI yet). #4 is closed, branch deleted. It added contract operations `register`/`login`/`logout`/`getMe`, `backend/security.py` + `backend/auth.py`, migration `0002` (`auth_tokens`), Spanish login/register/home pages with the `pl_session` cookie, 60 tests + 21 integration tests. No new dependencies. Follow-up #26 (login rate limiting) filed as `backlog`; admin creation noted on #18.
 - Since #4, `/` requires a session; the backend status line from #23 is on the login page.
+- #6 (default + user-created categories) and #5 (items) are **groomed**. **#6 goes before #5**: every item needs a category and new users have none until #6. Follow-ups filed as `backlog`: #28 (rename a category), #29 (edit/move an item), #30 (fetch the title automatically). Waiting for David's review.
 - Deadline: **Friday 2026-11-13** (Costa Rica time). Peer reviews of three other projects are also required to pass.
 
 ## In progress
 
-- Nothing.
+- Nothing. Waiting for David to review #6 and #5.
 
 ## Next up
 
-1. PM grooms #5 (items: create, list, filter by category, delete), on top of the auth from #4.
-2. Implement, QA and merge #5 following `_docs/process.md`.
+1. David reviews the groomed #6 and #5.
+2. Implement #6 on branch `6-categories`, QA, merge.
+3. Implement #5 on branch `5-items`, QA, merge.
+4. PM grooms #7 (Daily dashboard).
 
 ## Decisions
 
@@ -78,6 +81,9 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 | 2026-11-08 | Backend contract test lists routes with FastAPI's `get_openapi` | FastAPI 0.162 nests included routers, so scanning `app.routes` missed them; the YAML stays the contract |
 | 2026-11-08 | Frontend parses form bodies with `urllib.parse` | FastAPI `Form` needs `python-multipart`, a new dependency |
 | 2026-11-08 | Backend 422 handler returns only `{field, message}` in Spanish | FastAPI's default echoes the input, including passwords |
+| 2026-11-08 | Implement #6 (categories) before #5 (items) | Every item needs a category; new users have none until #6 |
+| 2026-11-08 | #5: only `http(s)://` URLs (max 2048); empty title becomes the URL; another user's category gets the same 422 as a missing one | Blocks `javascript:` links; saving stays fast; no id probing |
+| 2026-11-08 | #6: defaults created in the registration transaction; migration `0003` backfills existing users; names unique per user ignoring case; deleting a category with items is 409 | Matches the schema from #3; no half-created users |
 | 2026-11-08 | Merge PRs without CI until #10 adds it, on local `make lint` + `make test` and David's OK | No CI exists yet; David approved for #21 |
 
 ## Open questions
