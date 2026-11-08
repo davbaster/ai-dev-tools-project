@@ -20,7 +20,7 @@ Check what dev runs: `curl https://para-luego-dev-backend.onrender.com/api/healt
 | Resource | What | Notes |
 |---|---|---|
 | `para-luego-dev-backend` | web, image, free | `sh /app/backend/start.sh`: migrations, then uvicorn on port 8001. `DATABASE_URL` from the database. |
-| `para-luego-dev-frontend` | web, image, free | uvicorn on port 8000. `BACKEND_URL` = the backend's public URL; `BACKEND_TIMEOUT_SECONDS=60`. |
+| `para-luego-dev-frontend` | web, image, free | uvicorn on port 8000. `BACKEND_URL` = the backend's public URL; `BACKEND_TIMEOUT_SECONDS=60`; `BACKEND_WAKE_SECONDS=60` (while the backend wakes, Render answers the frontend's calls with quick errors, so the frontend retries GETs, and calls whose connection failed, for up to 60 s). |
 | `para-luego-dev-db` | Postgres 16, free | One free Postgres per workspace. **Expires 30 days after creation** (then 14 days of grace before deletion). Created 2026-11-08: **expires 2026-12-08**. |
 
 Free plan limits that shape this (checked 2026-11-08): free web services can't receive private-network traffic (so the frontend uses the backend's public URL), have no pre-deploy command (so migrations run at start), and sleep after 15 minutes without traffic (about a minute to wake up). Prod's database goes to Neon's free tier in #12, because Render allows only one free Postgres.
@@ -38,4 +38,5 @@ These are account changes, so a person does them once:
 
 - **CD times out waiting for the version:** open the service's *Events* and *Logs* in Render. A failed migration shows up in the backend log; the previous version keeps serving.
 - **400 from a deploy hook:** the `imgURL` must match the service's image (`ghcr.io/davbaster/ai-dev-tools-project`) except for the tag.
-- **First page after a while is slow:** the free services were asleep; the frontend waits up to 60 seconds for the backend.
+- **First page after a while is slow:** the free services were asleep; the frontend retries the backend for up to 60 seconds while it wakes.
+- **"Backend: unavailable" right after waking:** found in QA of #11: with only `BACKEND_TIMEOUT_SECONDS` the frontend got an immediate error from Render while the backend woke (0.9 s), so `BACKEND_WAKE_SECONDS` was added. If it shows again, check that both variables are set on the frontend service.
