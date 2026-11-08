@@ -63,3 +63,13 @@ def get_backend_wake_seconds() -> float:
             f"Invalid BACKEND_WAKE_SECONDS={raw!r}. Use a number of seconds, 0 or more."
         )
     return value
+
+
+def get_backend_public_url() -> str | None:
+    """Backend URL the user's browser can reach, to wake a sleeping backend.
+
+    BACKEND_PUBLIC_URL, unset locally (no wake-up page); on Render the
+    backend's public https URL.
+    """
+    value = os.environ.get("BACKEND_PUBLIC_URL", "").strip().rstrip("/")
+    return value or None

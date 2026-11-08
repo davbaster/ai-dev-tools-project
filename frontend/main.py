@@ -10,6 +10,7 @@ from fastapi.templating import Jinja2Templates
 
 from frontend.api_client import BackendClient, BackendUnavailable
 from frontend.config import (
+    get_backend_public_url,
     get_backend_timeout,
     get_backend_url,
     get_backend_wake_seconds,
@@ -23,6 +24,7 @@ DEPLOYMENT = get_deployment()
 BACKEND_URL = get_backend_url()
 BACKEND_TIMEOUT = get_backend_timeout()
 BACKEND_WAKE_SECONDS = get_backend_wake_seconds()
+BACKEND_PUBLIC_URL = get_backend_public_url()
 VERSION = get_version()
 
 SESSION_COOKIE = "pl_session"
@@ -83,7 +85,12 @@ def render(request: Request, template: str, status_code: int = 200, **context):
 
 
 def unavailable_page(request: Request) -> HTMLResponse:
-    return render(request, "error.html", 503, message=UNAVAILABLE)
+    # En Render, el navegador despierta al backend y recarga (_wake.html).
+    response = render(
+        request, "error.html", 503, message=UNAVAILABLE, wake_url=BACKEND_PUBLIC_URL
+    )
+    response.headers["Retry-After"] = "10"
+    return response
 
 
 def backend_status(backend: BackendClient) -> str:
@@ -317,7 +324,9 @@ async def delete_item(item_id: int, request: Request, backend: Backend):
 
 @app.get("/login", response_class=HTMLResponse)
 def login_page(request: Request, backend: Backend):
-    return render(request, "login.html", backend_status=backend_status(backend))
+    status = backend_status(backend)
+    wake_url = BACKEND_PUBLIC_URL if status == "unavailable" else None
+    return render(request, "login.html", backend_status=status, wake_url=wake_url)
 
 
 @app.post("/login", response_class=HTMLResponse)
