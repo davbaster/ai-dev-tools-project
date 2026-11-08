@@ -109,8 +109,9 @@ Per-folder commands (run from the repo root):
 
 The process works with any capable LLM. Suggested tiers:
 
-- Orchestrator (the main session): a strong model (for example Claude Opus 5.5 or an equivalent)
-- Subagents (PM, engineer, QA): a fast model (for example Claude Haiku 5.5); move a complex task up to a mid-tier model (for example Claude Sonnet 5.5)
+- Orchestrator (the main session): Claude Opus 5.5 (`claude-opus-5-5`), medium effort - or an equivalent strong model
+- Software Engineer: Claude Sonnet 5.5 (`claude-sonnet-5-5`), high effort - or an equivalent mid-tier model
+- PM and QA Engineer: Claude Haiku 5.5 (`claude-haiku-5-5`), high effort - or an equivalent fast model; move a hard task up to Sonnet
 - On-call responder (runtime): any OpenAI-compatible model, configured with `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` (default `gpt-6-luna`)
 
 If your tool has no subagents, play the roles one after another in the same session, following `_docs/team.md`.
