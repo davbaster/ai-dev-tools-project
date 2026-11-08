@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-08, by the orchestrator session (#11 merged; CD push to GHCR denied, waiting for David)
+**Last updated:** 2026-11-08, by the orchestrator session (#11: image on GHCR, waiting for David's Render steps)
 
 ## Current state
 
@@ -30,11 +30,11 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 
 ## In progress
 
-- #11: PR #39 merged (with David's OK, before the live QA); issue reopened. CI on `main` green; **CD dev failed: GHCR push denied**. David checks the package `ai-dev-tools-project` (Manage Actions access → this repo, Write, or delete it if unused), then re-run CD, then the one-time Render steps and live QA.
+- #11: PR #39 merged (with David's OK, before the live QA); issue reopened. CI and CD on `main` work: image `ghcr.io/davbaster/ai-dev-tools-project:dev` is public; deploy skipped (no secrets yet). Waiting for David to apply the Blueprint and save the two deploy hook secrets; then re-run CD and live QA.
 
 ## Next up
 
-1. David: fix GHCR access for the package (see In progress), then re-run CD dev.
+1. David: apply the Render Blueprint and save the two deploy hook secrets (`_docs/deploy.md` steps 2-3).
 2. Then David's one-time steps (`_docs/deploy.md`), CD re-run, live QA, record on #11. Next: #12 (prod on Neon, rollback).
 
 ## Decisions
