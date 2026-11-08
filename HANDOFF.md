@@ -2,30 +2,29 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-08, by the orchestrator session (#2 merged; frontend/backend split decided, #23 groomed)
+**Last updated:** 2026-11-08, by the orchestrator session (#23 implemented, QA PASS, PR #24 open)
 
 ## Current state
 
-- **Architecture change (2026-11-08):** the app is split into `backend/` (JSON API under `/api/...`, owns Postgres) and `frontend/` (FastAPI + Jinja2 pages), talking only through `api/openapi.yaml` (contract-first). `_docs/plan.md` (sections 4, 5, 6, 9, 11), `AGENTS.md` (layout, commands, a new rules block) and `_docs/testing-guidelines.md` (contract layer) are updated. The code does not reflect it yet: #23 does the split.
+- **Architecture change (2026-11-08):** the app is split into `backend/` (JSON API under `/api/...`, owns Postgres) and `frontend/` (FastAPI + Jinja2 pages), talking only through `api/openapi.yaml` (contract-first). `_docs/plan.md` (sections 4, 5, 6, 9, 11), `AGENTS.md` (layout, commands, a new rules block) and `_docs/testing-guidelines.md` (contract layer) are updated. The code split is on PR #24 (not merged yet).
 - Planning done. Agent docs written (`AGENTS.md`, `_docs/`).
 - Docs committed and pushed to `davbaster/ai-dev-tools-project`.
 - Labels from `_docs/process.md` created: `backlog`, `groomed`, `in-progress`, `qa-pass`, `qa-fail`, `incident`, `needs-human`.
 - Issues #1-#20 created from the backlog seed (`_docs/plan.md` section 11), numbered in the same order. #2-#20 are labeled `backlog`.
 - #1 (repo scaffold): groomed, approved by David (with `httpx`), implemented on `1-repo-scaffold`, **QA: PASS**, PR #21 merged into `main` by the orchestrator with David's OK (no CI yet). #1 is closed, branch deleted.
 - #2 (Docker Compose with app + Postgres): groomed, approved by David, implemented on `2-docker-compose`, **QA: PASS**, PR #22 merged into `main` with David's OK (no CI yet). #2 is closed, branch deleted.
-- #23 (split into frontend and backend with `api/openapi.yaml`) filed and **groomed**. Comments about the split posted on #3-#8, #11, #13, #18.
-- Code on `main`: uv project, single `app/` (`/`, `/health`), `app/config.py`, 8 tests, `Dockerfile`, `.dockerignore`, `docker-compose.yml` (app + `postgres:16`). Makefile targets: `help`, `install`, `dev`, `lint`, `format`, `test`, `build`, `up`, `down`, `logs`.
+- #23 (split into frontend and backend with `api/openapi.yaml`): groomed, approved by David (with `httpx` runtime and `pyyaml` dev), implemented on `23-frontend-backend-split`, **QA: PASS** (labels `groomed`, `qa-pass`). PR #24 is open, not merged. Comments about the split posted on #3-#8, #11, #13, #18.
+- Code on `main`: single `app/` (until PR #24 merges). On the #23 branch: `api/openapi.yaml` (`GET /api/health`), `backend/` (JSON API), `frontend/` (Jinja2 page + `httpx` client with an `OPERATIONS` table), 27 tests (unit, frontend, contract), Compose with `frontend` (8000) + `backend` (8001) + `db`. Makefile targets: `help`, `install`, `dev-backend`, `dev-frontend`, `lint`, `format`, `test`, `build`, `up`, `down`, `logs`.
 - Deadline: **Friday 2026-11-13** (Costa Rica time). Peer reviews of three other projects are also required to pass.
 
 ## In progress
 
-- Nothing. Waiting for David to review #23 and approve its dependencies.
+- PR #24 waits for David's OK to merge (no CI yet).
 
 ## Next up
 
-1. David reviews the groomed #23 and approves `httpx` as a runtime dependency and `pyyaml` as a dev dependency.
-2. Implement #23 on branch `23-frontend-backend-split`, QA, merge (no CI yet: local checks + David's OK).
-3. PM grooms #3 (database models and Alembic migrations, in `backend/`). It will need new dependencies (SQLAlchemy, Alembic, a Postgres driver), which David must approve.
+1. David approves merging PR #24; the orchestrator merges it (closes #23).
+2. PM grooms #3 (database models and Alembic migrations, in `backend/`). It will need new dependencies (SQLAlchemy, Alembic, a Postgres driver), which David must approve.
 
 Order note: #23 goes before #3 even though its number is higher. #3-#8, #11, #13 and #18 depend on it.
 
@@ -62,6 +61,9 @@ Order note: #23 goes before #3 even though its number is higher. #3-#8, #11, #13
 | 2026-11-08 | Backend issues a bearer token at login; the frontend keeps it in its own signed `HttpOnly` session cookie | The browser never sees the API token; details settled when grooming #4 |
 | 2026-11-08 | One `pyproject.toml`, one `Dockerfile`, two services (frontend 8000, backend 8001) | AGENTS.md: single root `pyproject.toml`; simplest packaging |
 | 2026-11-08 | PR #22 merged as is; #23 turns the single Compose `app` into `frontend` + `backend` | David's choice; #2 had already passed QA |
+| 2026-11-08 | `httpx` runtime, `pyyaml` dev approved | David approved for #23 |
+| 2026-11-08 | Frontend Compose service sets `dns_opt: timeout:1, attempts:1` | Docker DNS took ~4 s to fail for a stopped backend and `httpx`'s timeout doesn't cover DNS |
+| 2026-11-08 | Frontend client lists its calls in an `OPERATIONS` table (operationId → method, path) | Lets the contract test check every call without generating code |
 | 2026-11-08 | Merge PRs without CI until #10 adds it, on local `make lint` + `make test` and David's OK | No CI exists yet; David approved for #21 |
 
 ## Open questions
