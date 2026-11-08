@@ -23,7 +23,7 @@ Interesting things (links, YouTube or social videos, photos, books, movies, prod
 - **Share via WhatsApp:** a button opens `https://wa.me/?text=<title, note, URL>`; the user picks the contact and sends.
 - **Copy:** a button copies the same text (title, note, URL) to the clipboard, to paste into an email or anywhere else. Shows a short "Copied" confirmation.
 - **Admin panel:** counts of 2xx/4xx/5xx by status code (404, 500, 503, 504), a "Simulate error" button, and the incident list.
-- **Error routes:** `/simulate/500`, `/simulate/503`, `/simulate/504` (admin only) to demo alerts.
+- **Error routes:** backend `/api/simulate/500`, `/api/simulate/503`, `/api/simulate/504` (admin only) to demo alerts; the admin panel calls them through the frontend.
 
 **Out of scope:** native/mobile app, browser extension, recipient accounts, sending messages through an API, email digests, recommendations by relevance, password reset.
 
@@ -31,8 +31,9 @@ Interesting things (links, YouTube or social videos, photos, books, movies, prod
 
 | Layer | Choice |
 |---|---|
-| Backend | Python 3.12, FastAPI, SQLAlchemy 2, Alembic |
-| Frontend | Jinja2 templates, plain CSS, a little vanilla JS (copy button) |
+| Backend | Python 3.12, FastAPI JSON API, SQLAlchemy 2, Alembic. The only service that talks to Postgres |
+| Frontend | Python 3.12, its own FastAPI service rendering Jinja2 templates, plain CSS, a little vanilla JS (copy button). Talks to the backend only through the API, with `httpx` |
+| API contract | `api/openapi.yaml` (OpenAPI 3.1), written by hand, **contract-first**: source of truth for every backend endpoint |
 | Database | PostgreSQL 16 |
 | Packaging | uv |
 | Containers | Docker, Docker Compose |
@@ -45,8 +46,9 @@ Interesting things (links, YouTube or social videos, photos, books, movies, prod
 ## 5. Architecture
 
 ```
-Browser ──HTTP──> FastAPI app ──SQL──> Postgres
-                     │ OTLP (traces, metrics, logs, shared trace_id)
+Browser ──HTML──> Frontend (FastAPI + Jinja2) ──JSON API (api/openapi.yaml)──> Backend (FastAPI) ──SQL──> Postgres
+                     │                                                            │
+                     └──────────── OTLP (traces, metrics, logs, shared trace_id) ─┘
                      v
               OTel Collector ──> Prometheus / Tempo / Loki ──> Grafana
                                                                   │ alert webhook
@@ -57,13 +59,21 @@ Browser ──HTTP──> FastAPI app ──SQL──> Postgres
                                            └─ no cause    → incident `needs-human`
 ```
 
+### Frontend and backend
+
+- **Two services.** The **backend** (`backend/`) is a JSON API under `/api/...` and owns the database. The **frontend** (`frontend/`) serves the HTML pages the user sees and gets all data from the backend API. The frontend never imports backend code and never touches the database.
+- **Contract-first.** `api/openapi.yaml` is written before the code. A backend endpoint is added or changed by editing `api/openapi.yaml` first. A contract test fails if the backend's routes (paths, methods, status codes) don't match the file, and another fails if the frontend's API client calls anything the file doesn't define.
+- **Auth across the split.** The backend issues a token on login and checks it on every protected endpoint (`Authorization: Bearer`). The frontend keeps that token inside its own signed, `HttpOnly` session cookie, so the browser never sees it. Details are settled when #4 is groomed.
+- **Ports (local):** frontend `8000` (what users open), backend `8001`.
+- **Packaging:** one root `pyproject.toml` and `uv.lock` (AGENTS.md rule), one `Dockerfile`; Compose and Render run two services from it with different commands.
+
 ### Cloud demo mode (Render)
 
-Render runs only the app and Postgres. The admin panel acts as a mini-Grafana with status-code counts kept by the app. "Simulate error" calls an error route; when 5xx count crosses a threshold in a short window, the app starts the responder in a background task. The incident and its diagnosis appear in the admin panel.
+Render runs the frontend, the backend and Postgres. The admin panel acts as a mini-Grafana with status-code counts kept by the backend (and served to the frontend through the API). "Simulate error" calls a backend error route; when the 5xx count crosses a threshold in a short window, the backend starts the responder in a background task. The incident and its diagnosis appear in the admin panel.
 
 ## 6. Observability
 
-- **Key user journey:** *save an item* (`POST /items`) - instrumented end to end: HTTP span, DB span, a `items_saved_total` counter, a request-duration histogram, and structured JSON logs that carry the same `trace_id`.
+- **Key user journey:** *save an item* (frontend form → backend `POST /api/items`) - instrumented end to end across both services, one trace: frontend HTTP span, frontend → backend client span, backend HTTP span, DB span, a `items_saved_total` counter, a request-duration histogram, and structured JSON logs that carry the same `trace_id`.
 - Every request: `http_requests_total{route, method, status}` with the **route template**, never the raw path.
 - **No customer data in telemetry:** no usernames, URLs, titles or notes; only ids.
 - Logs are JSON to stdout; the collector ships them to Loki. Grafana links a log line to its trace in Tempo by `trace_id`.
@@ -72,7 +82,7 @@ Render runs only the app and Postgres. The admin panel acts as a mini-Grafana wi
 
 Alerts measure what users feel, not CPU:
 
-- **SaveItemFailing:** error rate of `POST /items` > 5% over 5 minutes.
+- **SaveItemFailing:** error rate of backend `POST /api/items` > 5% over 5 minutes.
 - **HighServerErrors:** 5xx rate on any route > 5% over 5 minutes.
 
 Each alert's webhook goes to the responder.
@@ -85,13 +95,14 @@ Each alert's webhook goes to the responder.
 4. If the cause is found in code, writes a minimal fix plus a test and **pushes it directly to `main`**. CI runs; if green, CD deploys to **dev** and the alert resolves. It then opens a PR from `main` to `prod`; a human merges it to deploy to production.
 5. If not, labels the incident `needs-human`, writes what it checked, and shows it in the admin panel.
 
-Demo bug: a feature-flagged defect (for example `BUG_SAVE_ITEM=1` makes `POST /items` raise on long titles) that the responder can find and fix.
+Demo bug: a feature-flagged defect (for example `BUG_SAVE_ITEM=1` makes backend `POST /api/items` raise on long titles) that the responder can find and fix.
 
 ## 9. Testing (proof-of-concept level)
 
 - **Unit:** Daily selection, WhatsApp/copy text building, password hashing, redaction.
 - **Frontend:** rendered pages contain the expected elements; the login → save → list flow with FastAPI's test client.
 - **Integration:** real Postgres in Docker; save and read back an item; categories per user.
+- **Contract:** backend routes match `api/openapi.yaml`; the frontend API client only calls operations defined there. Frontend tests fake the backend from the contract, with no real network.
 - `make test` runs all three.
 
 ## 10. CI/CD
@@ -129,6 +140,10 @@ Create one issue per line, labeled `backlog`. The PM grooms each before work sta
 18. Admin panel: status-code counts, Simulate error, incidents (cloud demo mode)
 19. Demo bug behind a flag + end-to-end incident demo
 20. README: problem, usage, local run, deploy, demo script
+
+Added after the seed (issue numbers 21 and 22 are PRs):
+
+23. Split into frontend and backend services with the `api/openapi.yaml` contract. Do it before #3; #3-#8, #11, #13 and #18 build on the split.
 
 ## 12. Demo script
 

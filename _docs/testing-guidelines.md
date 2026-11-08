@@ -1,12 +1,13 @@
 # Testing guidelines
 
-Proof-of-concept level: a few meaningful tests per layer, not full coverage. All three layers must exist and pass with `make test`.
+Proof-of-concept level: a few meaningful tests per layer, not full coverage. All layers (unit, frontend, integration, contract) must exist and pass with `make test`.
 
 | Layer | Folder | Uses | Example |
 |---|---|---|---|
 | Unit | `tests/unit/` | plain pytest, no DB or network | Daily picks one item per non-empty category; share text includes title, note and URL; redaction hides secrets |
-| Frontend | `tests/frontend/` | FastAPI `TestClient`, SQLite or the test DB | Login page renders; after login the dashboard shows the Daily, WhatsApp and Copy buttons |
-| Integration | `tests/integration/` | real Postgres in Docker (`make test-integration`) | Save an item and read it back; one user cannot see another's items |
+| Frontend | `tests/frontend/` | FastAPI `TestClient` on the frontend app, backend faked with responses shaped by `api/openapi.yaml` (no real network) | Login page renders; after login the dashboard shows the Daily, WhatsApp and Copy buttons |
+| Integration | `tests/integration/` | real Postgres in Docker (`make test-integration`), backend API | Save an item and read it back; one user cannot see another's items |
+| Contract | `tests/contract/` | plain pytest, reads `api/openapi.yaml` | Every backend route matches the contract; the frontend client calls only operations the contract defines |
 
 ## Rules
 

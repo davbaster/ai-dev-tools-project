@@ -37,12 +37,15 @@ It is a course final project and a **proof of concept**: keep everything simple,
 
 | Path | What |
 |---|---|
-| `app/` | FastAPI app: routes, Jinja2 templates, SQLAlchemy models, auth, admin panel, telemetry setup. |
-| `app/templates/` | Server-rendered HTML pages (the frontend). |
-| `migrations/` | Alembic migrations. |
+| `api/openapi.yaml` | The API contract between frontend and backend (OpenAPI 3.1, contract-first). Change it before changing an endpoint. |
+| `backend/` | Backend service: FastAPI JSON API under `/api/...`, SQLAlchemy models, auth tokens, status-code counts, error routes, telemetry setup. The only code that touches Postgres. |
+| `frontend/` | Frontend service: FastAPI + Jinja2 pages (including the admin panel), API client for the backend, session cookie, telemetry setup. |
+| `frontend/templates/` | Server-rendered HTML pages. |
+| `migrations/` | Alembic migrations (backend). |
 | `tests/unit/` | Fast tests, no database or network. |
 | `tests/integration/` | Tests against a real Postgres (Docker). |
-| `tests/frontend/` | Tests of the rendered pages and user flows. |
+| `tests/frontend/` | Tests of the rendered pages and user flows, with the backend faked from the contract. |
+| `tests/contract/` | Backend routes and the frontend client checked against `api/openapi.yaml`. |
 | `oncall/agent/` | Responder agent: receives alerts, investigates, pushes a fix to `main` (dev) or escalates. |
 | `oncall/mcp_server/` | MCP server with the on-call tools. |
 | `observability/` | OpenTelemetry Collector, Prometheus, Tempo, Loki and Grafana config (dashboards + alert rules). |
@@ -59,8 +62,8 @@ Some folders don't exist until their backlog task creates them.
 The root `Makefile` is the single entry point, and CI calls the same targets. Plain `make` lists every target. Variables go after the target (`make test-integration DATABASE_URL=<url>`). A failing command stops `make` with a non-zero exit code.
 
 - `make install` - install dependencies (uv)
-- `make up` / `make down` - start / stop the full local system (app, Postgres, observability stack, on-call agent, MCP server)
-- `make logs` - follow the app logs
+- `make up` / `make down` - start / stop the full local system (frontend, backend, Postgres, observability stack, on-call agent, MCP server)
+- `make logs` - follow the frontend and backend logs
 - `make lint` - ruff (lint + format check)
 - `make security` - bandit + pip-audit
 - `make test` - every suite (`test-unit`, `test-frontend`, `test-integration`); integration starts its own disposable Postgres
@@ -78,7 +81,10 @@ Per-folder commands (run from the repo root):
 - `uv run pytest tests/unit/test_daily.py` - one file
 - `uv run ruff check .` - lint
 - `uv run alembic upgrade head` - apply migrations (needs `DATABASE_URL`)
-- `uv run uvicorn app.main:app --reload --port 8000` - dev server (needs `DATABASE_URL` and `DEPLOYMENT=local`)
+- `uv run uvicorn backend.main:app --reload --port 8001` - backend dev server (needs `DATABASE_URL` and `DEPLOYMENT=local`)
+- `uv run uvicorn frontend.main:app --reload --port 8000` - frontend dev server (needs `BACKEND_URL=http://localhost:8001` and `DEPLOYMENT=local`)
+
+(The scaffold still has a single `app/` until #23 splits it.)
 
 ## Rules
 
@@ -86,6 +92,11 @@ Per-folder commands (run from the repo root):
 - Python only, managed with uv in the root `pyproject.toml`.
 - Do not add a dependency without asking the user first.
 - Commit `uv.lock` in the same change as `pyproject.toml`.
+
+**Frontend, backend and the API contract**
+- The frontend talks to the backend only through the HTTP API defined in `api/openapi.yaml`. It never imports from `backend/` and never connects to Postgres.
+- Contract-first: to add or change an endpoint, edit `api/openapi.yaml` first, then the backend, then the frontend client, in the same change. The contract tests must pass.
+- Backend endpoints live under `/api/...`. Errors return JSON, never HTML.
 
 **Data, security and telemetry**
 - Never log, trace or return passwords, password hashes, session cookies, API keys or tokens.
