@@ -2,23 +2,27 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-08, by the planning session
+**Last updated:** 2026-11-08, by the orchestrator session (#1 implemented, QA PASS, PR #21 open)
 
 ## Current state
 
 - Planning done. Agent docs written (`AGENTS.md`, `_docs/`).
-- No code yet. GitHub repo and issues not created yet.
+- Docs committed and pushed to `davbaster/ai-dev-tools-project`.
+- Labels from `_docs/process.md` created: `backlog`, `groomed`, `in-progress`, `qa-pass`, `qa-fail`, `incident`, `needs-human`.
+- Issues #1-#20 created from the backlog seed (`_docs/plan.md` section 11), numbered in the same order. #2-#20 are labeled `backlog`.
+- #1 (repo scaffold): groomed, approved by David (with `httpx`), implemented on `1-repo-scaffold`, **QA: PASS** (labels `groomed`, `qa-pass`). PR #21 is open and mergeable, not merged.
+- Code now: uv project, `app/main.py` (`/`, `/health`), `app/config.py`, Makefile (`help`, `install`, `dev`, `lint`, `format`, `test`), 8 tests.
 - Deadline: **Friday 2026-11-13** (Costa Rica time). Peer reviews of three other projects are also required to pass.
 
 ## In progress
 
-- Nothing.
+- PR #21 waits for David's OK to merge. There is no CI yet (#10), so "green CI" from `_docs/process.md` cannot be met; the merge relies on local `make lint` and `make test`.
 
 ## Next up
 
-1. Commit and push these docs to `davbaster/ai-dev-tools-project` (repo already exists).
-2. Create the labels from `_docs/process.md` and the issues from the backlog seed in `_docs/plan.md` (section 11).
-3. Start with issue 1 (repo scaffold).
+1. David approves merging PR #21 without CI; the orchestrator merges it (closes #1).
+2. PM grooms #2 (Docker Compose with app + Postgres).
+3. Implement, QA and merge #2 following `_docs/process.md`.
 
 ## Decisions
 
@@ -39,8 +43,16 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 | 2026-11-08 | Responder pushes fixes directly to `main` (CD deploys to dev); prod changes only via PR `main` → `prod` merged by David | David's decision: fast fixes in dev, human gate for prod |
 | 2026-11-08 | Proof-of-concept testing: few tests, but unit + frontend + integration all exist | Course requires all three |
 | 2026-11-08 | `AGENTS.md` is the only instruction file; `CLAUDE.md` points to it | Must work with any LLM tool |
+| 2026-11-08 | #1 includes `GET /health` (`status` + `deployment`) and a minimal `make test` | Render and the MCP `check_health` tool need a health check later; AGENTS.md requires `make test` before done. #9 expands the test targets |
+| 2026-11-08 | `DEPLOYMENT` allowed values `local`/`dev`/`prod`, default `local`; an invalid value stops startup | Fail fast on bad config instead of running in an unknown mode |
+| 2026-11-08 | Makefile must work with GNU Make 3.81 | That is the `make` on David's Windows machine |
+| 2026-11-08 | `httpx` approved as a dev dependency | David approved; FastAPI's `TestClient` needs it |
+| 2026-11-08 | Roles played in this one session (no subagents) for #1 | Small task; QA comment says so |
 
 ## Open questions
+
+- Merge PR #21 without CI (none exists until #10)?
+- Starlette warns that `httpx` with `TestClient` is deprecated in favor of `httpx2`. Switching would be a new dependency; decide later if it becomes an error.
 
 - If Render's free tier allows only one free Postgres, use Neon for the second database? Decide with David when reaching issue 11 (Render blueprint).
 
