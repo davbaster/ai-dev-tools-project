@@ -28,5 +28,12 @@ RUN useradd --system --uid 10001 --no-create-home appuser
 USER appuser
 
 EXPOSE 8000 8001
+
+# Versión que reportan los health checks: el SHA del commit en CD, "local" si falta.
+# Va al final para no invalidar la caché de las capas anteriores.
+ARG APP_VERSION=local
+ENV APP_VERSION=$APP_VERSION
+LABEL org.opencontainers.image.source="https://github.com/davbaster/ai-dev-tools-project"
+
 # Por defecto el backend; el frontend se arranca con su propio comando.
 CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8001"]

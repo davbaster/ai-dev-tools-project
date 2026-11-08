@@ -1,0 +1,56 @@
+# Render Blueprint: the dev environment (prod comes in #12).
+# Free plan facts this follows (checked 2026-11-08, see #11):
+# - free web services can't receive private-network traffic, so the frontend
+#   calls the backend through its public URL;
+# - no pre-deploy command on free, so backend/start.sh runs the migrations;
+# - one free Postgres per workspace, expiring 30 days after creation.
+# Both services run the same image; CD deploys a commit's image with the
+# deploy hooks (imgURL = ghcr.io/davbaster/ai-dev-tools-project:<sha>).
+
+services:
+  - type: web
+    name: para-luego-dev-backend
+    runtime: image
+    image:
+      url: ghcr.io/davbaster/ai-dev-tools-project:dev
+    plan: free
+    region: virginia
+    dockerCommand: sh /app/backend/start.sh
+    healthCheckPath: /api/health
+    envVars:
+      - key: DEPLOYMENT
+        value: dev
+      - key: PORT
+        value: "8001"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: para-luego-dev-db
+          property: connectionString
+
+  - type: web
+    name: para-luego-dev-frontend
+    runtime: image
+    image:
+      url: ghcr.io/davbaster/ai-dev-tools-project:dev
+    plan: free
+    region: virginia
+    dockerCommand: uvicorn frontend.main:app --host 0.0.0.0 --port 8000
+    healthCheckPath: /health
+    envVars:
+      - key: DEPLOYMENT
+        value: dev
+      - key: PORT
+        value: "8000"
+      - key: BACKEND_URL
+        value: https://para-luego-dev-backend.onrender.com
+      # A sleeping free backend takes about a minute to wake up.
+      - key: BACKEND_TIMEOUT_SECONDS
+        value: "60"
+
+databases:
+  - name: para-luego-dev-db
+    plan: free
+    region: virginia
+    postgresMajorVersion: "16"
+    databaseName: para_luego
+    user: para_luego

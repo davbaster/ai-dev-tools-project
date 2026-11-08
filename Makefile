@@ -2,7 +2,7 @@
 # Compatible with GNU Make 3.81 (no .ONESHELL or newer features).
 
 .DEFAULT_GOAL := help
-.PHONY: help install dev-backend dev-frontend lint format security ci-local test test-unit test-frontend test-contract test-integration migrate build up down logs
+.PHONY: help install dev-backend dev-frontend lint format security ci-local test test-unit test-frontend test-contract test-integration migrate build up down logs image push-image deploy-dev wait-deploy
 
 help: ## List every target
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  %-17s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -83,3 +83,42 @@ ACT_IMAGE = catthehacker/ubuntu:act-latest
 
 ci-local: ## Run .github/workflows/ci.yml locally with act (needs Docker and act)
 	act pull_request -W .github/workflows/ci.yml -P ubuntu-latest=$(ACT_IMAGE) --pull=false --env TEST_DB_HOST=host.docker.internal
+
+# --- Deploy a dev (Render) ---------------------------------------------------
+# CD (.github/workflows/cd-dev.yml) llama a estos targets con TAG=<commit SHA>.
+# Los deploy hooks son secretos: vienen del entorno y nunca se imprimen.
+IMAGE ?= ghcr.io/davbaster/ai-dev-tools-project
+TAG ?=
+DEV_BACKEND_URL ?= https://para-luego-dev-backend.onrender.com
+DEV_FRONTEND_URL ?= https://para-luego-dev-frontend.onrender.com
+DEPLOY_WAIT_SECONDS ?= 600
+IMAGE_REF_ENCODED = $(subst /,%2F,$(subst :,%3A,$(IMAGE):$(TAG)))
+
+image: ## Build the app image as IMAGE:TAG and IMAGE:dev with APP_VERSION=TAG (TAG=<sha> required)
+	@test -n "$(TAG)" || { echo "TAG is required, e.g. make image TAG=<commit sha>"; exit 1; }
+	docker build --build-arg APP_VERSION=$(TAG) -t $(IMAGE):$(TAG) -t $(IMAGE):dev .
+
+push-image: ## Push IMAGE:TAG and IMAGE:dev (needs docker login to the registry)
+	@test -n "$(TAG)" || { echo "TAG is required"; exit 1; }
+	docker push $(IMAGE):$(TAG)
+	docker push $(IMAGE):dev
+
+deploy-dev: ## Deploy IMAGE:TAG to Render dev with the deploy hooks (RENDER_DEV_BACKEND_DEPLOY_HOOK, RENDER_DEV_FRONTEND_DEPLOY_HOOK)
+	@test -n "$(TAG)" || { echo "TAG is required"; exit 1; }
+	@test -n "$$RENDER_DEV_BACKEND_DEPLOY_HOOK" -a -n "$$RENDER_DEV_FRONTEND_DEPLOY_HOOK" || { echo "Deploy hook variables are not set"; exit 1; }
+	@echo "Deploying $(IMAGE):$(TAG) to the dev backend"
+	@curl -fsS -X POST -o /dev/null "$$RENDER_DEV_BACKEND_DEPLOY_HOOK&imgURL=$(IMAGE_REF_ENCODED)"
+	@echo "Deploying $(IMAGE):$(TAG) to the dev frontend"
+	@curl -fsS -X POST -o /dev/null "$$RENDER_DEV_FRONTEND_DEPLOY_HOOK&imgURL=$(IMAGE_REF_ENCODED)"
+
+wait-deploy: ## Wait until the dev backend and frontend health checks report version TAG (DEPLOY_WAIT_SECONDS, default 600)
+	@test -n "$(TAG)" || { echo "TAG is required"; exit 1; }
+	@for url in $(DEV_BACKEND_URL)/api/health $(DEV_FRONTEND_URL)/health; do \
+		echo "Waiting for $$url to report $(TAG)"; \
+		end=$$(( $$(date +%s) + $(DEPLOY_WAIT_SECONDS) )); \
+		until curl -fsS --max-time 90 "$$url" 2>/dev/null | grep -q '"version":"$(TAG)"'; do \
+			if [ $$(date +%s) -ge $$end ]; then echo "Timed out: $$url does not report $(TAG)"; exit 1; fi; \
+			sleep 15; \
+		done; \
+		echo "OK: $$url"; \
+	done

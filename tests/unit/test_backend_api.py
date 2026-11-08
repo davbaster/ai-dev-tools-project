@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from backend.main import DEPLOYMENT, app
+from backend.main import DEPLOYMENT, VERSION, app
 
 client = TestClient(app)
 
@@ -8,7 +8,11 @@ client = TestClient(app)
 def test_health_reports_status_and_deployment():
     response = client.get("/api/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok", "deployment": DEPLOYMENT}
+    assert response.json() == {
+        "status": "ok",
+        "deployment": DEPLOYMENT,
+        "version": VERSION,
+    }
 
 
 def test_unknown_api_path_returns_json_404():

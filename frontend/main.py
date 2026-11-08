@@ -9,12 +9,19 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 from fastapi.templating import Jinja2Templates
 
 from frontend.api_client import BackendClient, BackendUnavailable
-from frontend.config import get_backend_url, get_deployment
+from frontend.config import (
+    get_backend_timeout,
+    get_backend_url,
+    get_deployment,
+    get_version,
+)
 from frontend.share import share_text, whatsapp_url
 
 # Validated at import time so the frontend refuses to start with a bad value.
 DEPLOYMENT = get_deployment()
 BACKEND_URL = get_backend_url()
+BACKEND_TIMEOUT = get_backend_timeout()
+VERSION = get_version()
 
 SESSION_COOKIE = "pl_session"
 SESSION_MAX_AGE = 7 * 24 * 60 * 60  # igual que el token del backend
@@ -31,7 +38,7 @@ app = FastAPI(title="Para Luego", docs_url=None, redoc_url=None, openapi_url=Non
 
 def get_backend_client() -> BackendClient:
     # Los tests lo reemplazan con app.dependency_overrides para simular el backend.
-    return BackendClient(BACKEND_URL)
+    return BackendClient(BACKEND_URL, timeout=BACKEND_TIMEOUT)
 
 
 Backend = Annotated[BackendClient, Depends(get_backend_client)]
@@ -378,4 +385,4 @@ def logout(request: Request, backend: Backend):
 @app.get("/health")
 def health() -> JSONResponse:
     # Salud propia del frontend: no llama al backend.
-    return JSONResponse({"status": "ok", "deployment": DEPLOYMENT})
+    return JSONResponse({"status": "ok", "deployment": DEPLOYMENT, "version": VERSION})

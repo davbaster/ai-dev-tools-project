@@ -69,3 +69,46 @@ def test_backend_imports_without_database_url(monkeypatch):
 
     assert backend.db.get_engine.cache_info().currsize == 0
     assert backend.main.app is not None
+
+
+GET_VERSION = [backend_config.get_version, frontend_config.get_version]
+
+
+@pytest.mark.parametrize("get_version", GET_VERSION)
+def test_version_comes_from_app_version(monkeypatch, get_version):
+    monkeypatch.setenv("APP_VERSION", "0123abc")
+    assert get_version() == "0123abc"
+
+
+@pytest.mark.parametrize("get_version", GET_VERSION)
+@pytest.mark.parametrize("value", [None, "", "  "])
+def test_version_defaults_to_local(monkeypatch, get_version, value):
+    if value is None:
+        monkeypatch.delenv("APP_VERSION", raising=False)
+    else:
+        monkeypatch.setenv("APP_VERSION", value)
+    assert get_version() == "local"
+
+
+def test_backend_timeout_defaults_to_two_seconds(monkeypatch):
+    monkeypatch.delenv("BACKEND_TIMEOUT_SECONDS", raising=False)
+    assert frontend_config.get_backend_timeout() == 2.0
+
+
+def test_backend_timeout_reads_seconds(monkeypatch):
+    monkeypatch.setenv("BACKEND_TIMEOUT_SECONDS", "60")
+    assert frontend_config.get_backend_timeout() == 60.0
+
+
+@pytest.mark.parametrize("value", ["0", "-1", "abc"])
+def test_bad_backend_timeout_stops_startup(monkeypatch, value):
+    monkeypatch.setenv("BACKEND_TIMEOUT_SECONDS", value)
+    with pytest.raises(ValueError, match="BACKEND_TIMEOUT_SECONDS"):
+        frontend_config.get_backend_timeout()
+
+
+def test_backend_client_uses_the_configured_timeout():
+    from frontend.api_client import BackendClient
+
+    client = BackendClient("http://backend.test", timeout=60)
+    assert client._client.timeout.read == 60
