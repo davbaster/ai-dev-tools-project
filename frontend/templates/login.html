@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Iniciar sesión · Para Luego{% endblock %}
+{% block content %}
+<h2>Iniciar sesión</h2>
+{% include "_errors.html" %}
+<form method="post" action="/login">
+  <label>Usuario
+    <input name="username" autocomplete="username" required value="{{ username or '' }}">
+  </label>
+  <label>Contraseña
+    <input name="password" type="password" autocomplete="current-password" required>
+  </label>
+  <button type="submit">Entrar</button>
+</form>
+<p>¿No tenés cuenta? <a href="/register">Registrate</a></p>
+<p class="meta">Backend: {{ backend_status }}</p>
+{% endblock %}

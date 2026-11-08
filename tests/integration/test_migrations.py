@@ -2,7 +2,7 @@ from sqlalchemy import inspect
 
 from tests.integration.conftest import run_alembic
 
-APP_TABLES = {"users", "categories", "items", "incidents"}
+APP_TABLES = {"users", "categories", "items", "incidents", "auth_tokens"}
 
 
 def app_tables(engine) -> set[str]:
