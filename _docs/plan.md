@@ -63,7 +63,7 @@ Browser ──HTML──> Frontend (FastAPI + Jinja2) ──JSON API (api/openap
 
 - **Two services.** The **backend** (`backend/`) is a JSON API under `/api/...` and owns the database. The **frontend** (`frontend/`) serves the HTML pages the user sees and gets all data from the backend API. The frontend never imports backend code and never touches the database.
 - **Contract-first.** `api/openapi.yaml` is written before the code. A backend endpoint is added or changed by editing `api/openapi.yaml` first. A contract test fails if the backend's routes (paths, methods, status codes) don't match the file, and another fails if the frontend's API client calls anything the file doesn't define.
-- **Auth across the split.** The backend issues a token on login and checks it on every protected endpoint (`Authorization: Bearer`). The frontend keeps that token inside its own signed, `HttpOnly` session cookie, so the browser never sees it. Details are settled when #4 is groomed.
+- **Auth across the split.** The backend issues a token on login and checks it on every protected endpoint (`Authorization: Bearer`). The token is a random opaque value; the backend stores only its hash (`auth_tokens`, 7-day expiry) and logout revokes it. The frontend keeps the token in an `HttpOnly`, `SameSite=Lax` cookie (`pl_session`, `Secure` outside local), so page scripts can't read it; it needs no signing because it is opaque. Passwords are hashed with the standard library's `hashlib.scrypt`. Details in #4.
 - **Ports (local):** frontend `8000` (what users open), backend `8001`.
 - **Packaging:** one root `pyproject.toml` and `uv.lock` (AGENTS.md rule), one `Dockerfile`; Compose and Render run two services from it with different commands.
 

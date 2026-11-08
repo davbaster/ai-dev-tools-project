@@ -16,16 +16,18 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 - #23 (split into frontend and backend with `api/openapi.yaml`): groomed, approved by David (with `httpx` runtime and `pyyaml` dev), implemented on `23-frontend-backend-split`, **QA: PASS**, PR #24 merged into `main` with David's OK (no CI yet). #23 is closed, branch deleted. Comments about the split posted on #3-#8, #11, #13, #18.
 - #3 (database models and Alembic migrations): groomed, approved by David (with `sqlalchemy`, `alembic`, `psycopg[binary]`), implemented on `3-db-models-migrations`, **QA: PASS**, PR #25 merged into `main` with David's OK (no CI yet). #3 is closed, branch deleted.
 - Code on `main`: `api/openapi.yaml` (`GET /api/health`), `backend/` (JSON API, `models.py`, `db.py` with a lazy engine), `migrations/` (revision `0001`: users, categories, items, incidents), `frontend/` (Jinja2 page + `httpx` client with an `OPERATIONS` table), 32 tests (unit, frontend, contract) + 8 integration tests, Compose with `frontend` (8000) + `backend` (8001, runs migrations before serving) + `db`. Makefile targets: `help`, `install`, `dev-backend`, `dev-frontend`, `lint`, `format`, `test`, `test-integration`, `migrate`, `build`, `up`, `down`, `logs`.
+- #4 (registration, login, logout) is **groomed**: label `groomed`, "Groomed" comment posted. No new dependencies. Follow-up #26 (login rate limiting) filed as `backlog`; admin creation noted on #18. Waiting for David's review.
 - Deadline: **Friday 2026-11-13** (Costa Rica time). Peer reviews of three other projects are also required to pass.
 
 ## In progress
 
-- Nothing.
+- Nothing. Waiting for David to review #4.
 
 ## Next up
 
-1. PM grooms #4 (registration, login, logout across frontend and backend). A password-hashing library needs David's approval.
-2. Implement, QA and merge #4 following `_docs/process.md`.
+1. David reviews the groomed #4.
+2. Implement #4 on branch `4-auth`, QA, merge (no CI yet: local checks + David's OK).
+3. PM grooms #5 (items: create, list, filter by category, delete).
 
 ## Decisions
 
@@ -69,6 +71,10 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 | 2026-11-08 | `sqlalchemy`, `alembic`, `psycopg[binary]` approved | David approved for #3 |
 | 2026-11-08 | `items.category_id` FK uses `NO ACTION`, not `RESTRICT` (criterion reworded by the PM) | `RESTRICT` is checked immediately and could break the user-delete cascade; `NO ACTION` still refuses deleting a category with items |
 | 2026-11-08 | Database connect timeout 3 s | psycopg tries IPv6 and IPv4 for `localhost`; 5 s made an unreachable db take ~12 s |
+| 2026-11-08 | #4 auth: passwords with stdlib `hashlib.scrypt`; opaque tokens (`secrets`) stored hashed in `auth_tokens`, 7-day expiry, revoked on logout | No new dependency; revocable sessions |
+| 2026-11-08 | Frontend cookie `pl_session` holds the opaque token: `HttpOnly`, `SameSite=Lax`, `Secure` outside local; no signing | Opaque token needs no signing; avoids a signing library. Plan section 5 updated |
+| 2026-11-08 | Usernames trimmed and lowercased, 3-50 chars `[a-z0-9._-]`; passwords 8-128 chars; same 401 for unknown user and wrong password | Case-insensitive uniqueness; don't reveal which usernames exist |
+| 2026-11-08 | UI text in Spanish | Default categories are Spanish; David is in Costa Rica |
 | 2026-11-08 | Merge PRs without CI until #10 adds it, on local `make lint` + `make test` and David's OK | No CI exists yet; David approved for #21 |
 
 ## Open questions
