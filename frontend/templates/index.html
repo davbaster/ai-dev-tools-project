@@ -12,6 +12,7 @@
       <span class="category">{{ item.category_name }}</span>
       <a href="{{ item.url }}" target="_blank" rel="noopener noreferrer">{{ item.title }}</a>
       {% if item.note %}<p class="note">{{ item.note }}</p>{% endif %}
+      {% include "_share.html" %}
     </li>
     {% endfor %}
   </ul>

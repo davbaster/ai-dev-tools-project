@@ -42,6 +42,7 @@
     <a href="{{ item.url }}" target="_blank" rel="noopener noreferrer">{{ item.title }}</a>
     <span class="category">{{ item.category_name }}</span>
     {% if item.note %}<p class="note">{{ item.note }}</p>{% endif %}
+    {% include "_share.html" %}
     <form method="post" action="/items/{{ item.id }}/delete" class="inline">
       <input type="hidden" name="filter" value="{{ category_filter or '' }}">
       <button type="submit">Borrar</button>
