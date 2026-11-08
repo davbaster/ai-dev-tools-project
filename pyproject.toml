@@ -5,13 +5,15 @@ description = "Para Luego: save links, videos, books and products for later."
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "fastapi",
+    "httpx",
+    "jinja2",
     "uvicorn[standard]",
 ]
 
 [dependency-groups]
 dev = [
-    "httpx",
     "pytest",
+    "pyyaml",
     "ruff",
 ]
 

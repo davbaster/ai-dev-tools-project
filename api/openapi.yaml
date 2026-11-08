@@ -1,0 +1,32 @@
+# Contrato entre frontend y backend (contract-first).
+# Para agregar o cambiar un endpoint: editar este archivo primero, luego el backend
+# y el cliente del frontend, en el mismo cambio. Los tests de tests/contract/ lo verifican.
+openapi: 3.1.0
+info:
+  title: Para Luego API
+  version: 0.1.0
+  description: JSON API served by the backend and called by the frontend.
+paths:
+  /api/health:
+    get:
+      operationId: getHealth
+      summary: Backend health check. Touches no database.
+      responses:
+        "200":
+          description: The backend is running.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+components:
+  schemas:
+    Health:
+      type: object
+      required: [status, deployment]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        deployment:
+          type: string
+          enum: [local, dev, prod]

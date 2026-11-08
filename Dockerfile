@@ -1,4 +1,5 @@
-# Imagen de la app: Python 3.12, dependencias de runtime desde uv.lock, usuario no root.
+# Imagen única para frontend y backend: Compose y Render eligen el servicio con el comando.
+# Python 3.12, dependencias de runtime desde uv.lock, usuario no root.
 FROM ghcr.io/astral-sh/uv:0.11 AS uv
 
 FROM python:3.12-slim
@@ -18,10 +19,12 @@ WORKDIR /app
 COPY pyproject.toml uv.lock .python-version ./
 RUN uv sync --locked --no-dev
 
-COPY app ./app
+COPY backend ./backend
+COPY frontend ./frontend
 
 RUN useradd --system --uid 10001 --no-create-home appuser
 USER appuser
 
-EXPOSE 8000
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+EXPOSE 8000 8001
+# Por defecto el backend; el frontend se arranca con su propio comando.
+CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8001"]
