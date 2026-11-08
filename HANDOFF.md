@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-08, by the orchestrator session (#8 merged)
+**Last updated:** 2026-11-08, by the orchestrator session (#9 groomed, waiting for David's review)
 
 ## Current state
 
@@ -22,6 +22,7 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 - #5 (items): approved by David, implemented on `5-items`, **QA: PASS**, PR #32 merged into `main` with David's OK (no CI yet). #5 is closed, branch deleted. It added contract operations `createItem`/`listItems`/`deleteItem`, `backend/items.py`, the `/items` page (save form, category filter, list, delete); 84 tests + 47 integration tests. Follow-ups filed as `backlog`: #28 (rename a category), #29 (edit/move an item), #30 (fetch the title automatically).
 - #7 (Daily dashboard): groomed, approved by David, implemented on `7-daily`, **QA: PASS**, PR #34 merged into `main` with David's OK (no CI yet). #7 is closed, branch deleted. It adds contract operation `getDaily` (`GET /api/daily` → `Daily {date, items}`), `backend/daily.py` (pure `pick_daily` seeded with `user_id:date`, Costa Rica day at fixed UTC-6), the "Tu Daily" section on `/`; 93 tests + 51 integration tests. Follow-up #33 (reshuffle on demand) filed as `backlog`.
 - #8 (Share via WhatsApp and Copy): groomed, approved by David, implemented on `8-share`, **QA: PASS**, PR #35 merged into `main` with David's OK (no CI yet). #8 is closed, branch deleted. 106 tests + 51 integration tests. Frontend only, no backend or contract change: `frontend/share.py` builds the text (title, note if any, URL; URL once if the title is the URL) and the `wa.me` link; a shared partial puts both buttons on `/items` and on the Daily cards; one small vanilla script copies from an escaped attribute and shows "Copiado". No follow-ups filed. QA finding: WhatsApp's web page shows 4-byte emoji (🎵) as �; our link is valid UTF-8, nothing to fix on our side.
+- #9 (test suites): **groomed** by the PM (label `groomed`). Scoped to the targets: `test-unit`, `test-frontend`, `test-contract`, and `test-integration` with a throwaway Postgres (own Compose project, port 5433 / `TEST_DB_PORT`, removed even on failure, `TEST_DATABASE_URL` override); `make test` runs all four (so it now needs Docker); one missing frontend flow test (login → save → list); `AGENTS.md` and testing-guidelines updated. Waiting for David's review.
 - `/` now calls `getMe` and then `getDaily`; frontend test fakes that serve `/` must answer `/api/daily`.
 - Deadline: **Friday 2026-11-13** (Costa Rica time). Peer reviews of three other projects are also required to pass.
 
@@ -31,7 +32,9 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 
 ## Next up
 
-1. Next backlog issue: #9 (test suites; much already exists, PM should groom it down) or #10 (CI), per `_docs/process.md`.
+1. David reviews the groomed #9.
+2. On approval: implement #9 on branch `9-test-suites`, run `make lint` and the new `make test` (all suites), open the PR, QA, post `## QA: PASS`/`FAIL`. Merge only with David's OK (no CI yet).
+3. Then #10 (CI), which calls these targets.
 
 ## Decisions
 
@@ -87,6 +90,7 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 | 2026-11-08 | #6: defaults created in the registration transaction; migration `0003` backfills existing users; names unique per user ignoring case; deleting a category with items is 409 | Matches the schema from #3; no half-created users |
 | 2026-11-08 | #7 Daily (approved by David): stable for the whole day, seeded with user id + local date; day changes at midnight Costa Rica (fixed UTC-6, no `zoneinfo`); computed per request, nothing stored | A Daily that changes on every refresh isn't a "Daily"; fixed offset avoids needing `tzdata` on Windows; no migration |
 | 2026-11-08 | #8 (approved by David): share text built in the frontend from the `Item` it already gets; format title / note / URL one per line; buttons on `/items` and the Daily; text in an escaped HTML attribute, read by one vanilla script | No API change needed; avoids user data inside `<script>`; plan section 3 and testing guidelines ask for both pages |
+| 2026-11-08 | #9 (proposed, pending David's review): `make test` runs every suite including integration on a throwaway Postgres (port 5433); per-suite targets need no Docker | AGENTS.md and plan section 9 already promise it; CI (#10) calls the same targets; tests never touch dev data |
 | 2026-11-08 | Merge PRs without CI until #10 adds it, on local `make lint` + `make test` and David's OK | No CI exists yet; David approved for #21 |
 
 ## Open questions
