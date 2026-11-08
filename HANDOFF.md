@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-08, by the orchestrator session (#1 merged)
+**Last updated:** 2026-11-08, by the orchestrator session (#1 merged, #2 groomed)
 
 ## Current state
 
@@ -11,6 +11,7 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 - Labels from `_docs/process.md` created: `backlog`, `groomed`, `in-progress`, `qa-pass`, `qa-fail`, `incident`, `needs-human`.
 - Issues #1-#20 created from the backlog seed (`_docs/plan.md` section 11), numbered in the same order. #2-#20 are labeled `backlog`.
 - #1 (repo scaffold): groomed, approved by David (with `httpx`), implemented on `1-repo-scaffold`, **QA: PASS**, PR #21 merged into `main` by the orchestrator with David's OK (no CI yet). #1 is closed, branch deleted.
+- #2 (Docker Compose with app + Postgres) is **groomed**: label `groomed`, "Groomed" comment posted. Waiting for David's review.
 - Code now: uv project, `app/main.py` (`/`, `/health`), `app/config.py`, Makefile (`help`, `install`, `dev`, `lint`, `format`, `test`), 8 tests.
 - Deadline: **Friday 2026-11-13** (Costa Rica time). Peer reviews of three other projects are also required to pass.
 
@@ -20,8 +21,9 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 
 ## Next up
 
-1. PM grooms #2 (Docker Compose with app + Postgres).
-2. Implement, QA and merge #2 following `_docs/process.md`.
+1. David reviews the groomed #2.
+2. Implement #2 on branch `2-docker-compose`, QA, merge (no CI yet: local checks + David's OK).
+3. PM grooms #3 (database models and Alembic migrations).
 
 ## Decisions
 
@@ -47,6 +49,7 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 | 2026-11-08 | Makefile must work with GNU Make 3.81 | That is the `make` on David's Windows machine |
 | 2026-11-08 | `httpx` approved as a dev dependency | David approved; FastAPI's `TestClient` needs it |
 | 2026-11-08 | Roles played in this one session (no subagents) for #1 | Small task; QA comment says so |
+| 2026-11-08 | #2: `make up` uses `docker compose up -d --build --wait`; works without `.env` (local-only defaults); Postgres data in a named volume that survives `make down`; host ports overridable with `APP_PORT`/`DB_PORT` | One command from a fresh clone; keep dev data between restarts |
 | 2026-11-08 | Merge PRs without CI until #10 adds it, on local `make lint` + `make test` and David's OK | No CI exists yet; David approved for #21 |
 
 ## Open questions
