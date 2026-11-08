@@ -63,8 +63,10 @@ def clear_session(response: Response) -> None:
     )
 
 
-def render(request: Request, name: str, status_code: int = 200, **context):
-    return templates.TemplateResponse(request, name, context, status_code=status_code)
+def render(request: Request, template: str, status_code: int = 200, **context):
+    return templates.TemplateResponse(
+        request, template, context, status_code=status_code
+    )
 
 
 def unavailable_page(request: Request) -> HTMLResponse:
@@ -98,11 +100,93 @@ def index(request: Request, backend: Backend):
     except BackendUnavailable:
         return unavailable_page(request)
     if not me.ok:
-        # Token vencido o revocado: borrar la cookie y pedir login.
-        response = redirect("/login")
-        clear_session(response)
-        return response
+        return session_expired()
     return render(request, "index.html", user=me.body)
+
+
+def session_expired() -> RedirectResponse:
+    # Token vencido o revocado: borrar la cookie y pedir login.
+    response = redirect("/login")
+    clear_session(response)
+    return response
+
+
+def categories_page(
+    request: Request,
+    backend: BackendClient,
+    token: str,
+    status_code: int = 200,
+    errors: list[str] | None = None,
+    name: str = "",
+):
+    listed = backend.list_categories(token)
+    if listed.status == 401:
+        return session_expired()
+    return render(
+        request,
+        "categories.html",
+        status_code,
+        categories=listed.body,
+        errors=errors,
+        name=name,
+    )
+
+
+@app.get("/categories", response_class=HTMLResponse)
+def list_categories(request: Request, backend: Backend):
+    token = request.cookies.get(SESSION_COOKIE)
+    if not token:
+        return redirect("/login")
+    try:
+        return categories_page(request, backend, token)
+    except BackendUnavailable:
+        return unavailable_page(request)
+
+
+@app.post("/categories", response_class=HTMLResponse)
+async def create_category(request: Request, backend: Backend):
+    token = request.cookies.get(SESSION_COOKIE)
+    if not token:
+        return redirect("/login")
+    name = (await read_form(request)).get("name", "")
+    try:
+        created = backend.create_category(token, name)
+        if created.status == 401:
+            return session_expired()
+        if created.status != 201:
+            return categories_page(
+                request,
+                backend,
+                token,
+                created.status,
+                errors=error_messages(created.body),
+                name=name,
+            )
+    except BackendUnavailable:
+        return unavailable_page(request)
+    return redirect("/categories")
+
+
+@app.post("/categories/{category_id}/delete", response_class=HTMLResponse)
+def delete_category(category_id: int, request: Request, backend: Backend):
+    token = request.cookies.get(SESSION_COOKIE)
+    if not token:
+        return redirect("/login")
+    try:
+        deleted = backend.delete_category(token, category_id)
+        if deleted.status == 401:
+            return session_expired()
+        if deleted.status != 204:
+            return categories_page(
+                request,
+                backend,
+                token,
+                deleted.status,
+                errors=error_messages(deleted.body),
+            )
+    except BackendUnavailable:
+        return unavailable_page(request)
+    return redirect("/categories")
 
 
 @app.get("/login", response_class=HTMLResponse)

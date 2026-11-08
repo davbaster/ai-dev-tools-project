@@ -10,6 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from backend.db import get_db
+from backend.defaults import add_default_categories
 from backend.models import AuthToken, User
 from backend.security import (
     DUMMY_PASSWORD_HASH,
@@ -106,6 +107,9 @@ def register(body: RegisterRequest, db: DB) -> UserOut:
     user = User(username=body.username, password_hash=hash_password(body.password))
     db.add(user)
     try:
+        # Usuario y categorías por defecto en la misma transacción.
+        db.flush()
+        add_default_categories(db, user.id)
         db.commit()
     except IntegrityError:
         # Dos registros simultáneos con el mismo nombre.

@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <p>Hola, {{ user.username }}</p>
+<nav><a href="/categories">Categorías</a></nav>
 <form method="post" action="/logout">
   <button type="submit">Cerrar sesión</button>
 </form>

@@ -13,6 +13,9 @@ OPERATIONS: dict[str, tuple[str, str]] = {
     "login": ("POST", "/api/auth/login"),
     "logout": ("POST", "/api/auth/logout"),
     "getMe": ("GET", "/api/me"),
+    "listCategories": ("GET", "/api/categories"),
+    "createCategory": ("POST", "/api/categories"),
+    "deleteCategory": ("DELETE", "/api/categories/{category_id}"),
 }
 
 TIMEOUT_SECONDS = 2.0
@@ -39,9 +42,14 @@ class BackendClient:
         )
 
     def _call(
-        self, operation_id: str, json: dict | None = None, token: str | None = None
+        self,
+        operation_id: str,
+        json: dict | None = None,
+        token: str | None = None,
+        path_params: dict | None = None,
     ) -> ApiResult:
-        method, path = OPERATIONS[operation_id]
+        method, template = OPERATIONS[operation_id]
+        path = template.format(**(path_params or {}))
         headers = {"Authorization": f"Bearer {token}"} if token else {}
         try:
             response = self._client.request(method, path, json=json, headers=headers)
@@ -71,3 +79,14 @@ class BackendClient:
 
     def get_me(self, token: str) -> ApiResult:
         return self._call("getMe", token=token)
+
+    def list_categories(self, token: str) -> ApiResult:
+        return self._call("listCategories", token=token)
+
+    def create_category(self, token: str, name: str) -> ApiResult:
+        return self._call("createCategory", json={"name": name}, token=token)
+
+    def delete_category(self, token: str, category_id: int) -> ApiResult:
+        return self._call(
+            "deleteCategory", token=token, path_params={"category_id": category_id}
+        )
