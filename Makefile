@@ -2,7 +2,7 @@
 # Compatible with GNU Make 3.81 (no .ONESHELL or newer features).
 
 .DEFAULT_GOAL := help
-.PHONY: help install dev lint format test
+.PHONY: help install dev lint format test build up down logs
 
 help: ## List every target
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  %-10s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -23,3 +23,15 @@ format: ## Format and auto-fix with ruff
 
 test: ## Run the test suite
 	uv run pytest
+
+build: ## Build the Docker images
+	docker compose build
+
+up: ## Start the local system in Docker and wait until it is healthy
+	docker compose up -d --build --wait
+
+down: ## Stop and remove the containers (the database volume is kept)
+	docker compose down
+
+logs: ## Follow the app logs (Ctrl+C to stop)
+	docker compose logs -f app
