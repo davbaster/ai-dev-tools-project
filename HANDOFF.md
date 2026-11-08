@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-08, by the orchestrator session (#11 groomed, waiting for David's review)
+**Last updated:** 2026-11-08, by the orchestrator session (#11 PR #39 open with CI green; live QA needs the merge and David's one-time steps)
 
 ## Current state
 
@@ -24,18 +24,18 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 - #8 (Share via WhatsApp and Copy): groomed, approved by David, implemented on `8-share`, **QA: PASS**, PR #35 merged into `main` with David's OK (no CI yet). #8 is closed, branch deleted. 106 tests + 51 integration tests. Frontend only, no backend or contract change: `frontend/share.py` builds the text (title, note if any, URL; URL once if the title is the URL) and the `wa.me` link; a shared partial puts both buttons on `/items` and on the Daily cards; one small vanilla script copies from an escaped attribute and shows "Copiado". No follow-ups filed. QA finding: WhatsApp's web page shows 4-byte emoji (🎵) as �; our link is valid UTF-8, nothing to fix on our side.
 - #9 (test suites): groomed, approved by David, implemented on `9-test-suites`, **QA: PASS**, PR #36 merged into `main` with David's OK (no CI yet). #9 is closed, branch deleted. Targets: `test-unit`, `test-frontend`, `test-contract`, and `test-integration` with a throwaway Postgres (own Compose project, port 5433 / `TEST_DB_PORT`, removed even on failure, `TEST_DATABASE_URL` override); `make test` runs all four (so it now needs Docker); one missing frontend flow test (login → save → list); `AGENTS.md` and testing-guidelines updated. `make test`: unit 46, frontend 57, contract 4, integration 51.
 - #10 (CI workflow): groomed, approved by David (with `bandit` and `pip-audit`), implemented on `10-ci`, **QA: PASS**, PR #37 merged into `main` with David's OK and green CI. #10 is closed, branch deleted. CI on the push to `main` green (run 42515414360). `make security` (bandit on backend/frontend, medium+; pip-audit), `.github/workflows/ci.yml` (one job: `make install`, `lint`, `security`, `test`, `build`; on every PR and pushes to `main`/`prod`; no secrets; pinned actions; concurrency cancel), `make ci-local` with `act` (`TEST_DB_HOST=host.docker.internal`), docs say PRs merge only with green CI + QA PASS. Red-path check: throwaway PR #38 failed at Lint, later steps skipped; closed and branch deleted.
-- #11 (Render + CD to dev): **groomed** by the PM (label `groomed`), after checking Render's free-plan docs. `render.yaml` (dev db + backend + frontend, image-backed, free), `cd-dev.yml` (after green CI on `main`: build once, push to GHCR `:<sha>`/`:dev`, deploy hooks with `imgURL`, wait until both health checks report the SHA), `version` in health checks (contract change), `BACKEND_TIMEOUT_SECONDS` so a sleeping backend doesn't show the 503 page. Manual steps for David: Render workspace + Blueprint, two GitHub secrets, GHCR package public. Waiting for David's review.
+- #11 (Render + CD to dev): approved by David (dev on Render's free Postgres, prod on Neon in #12), implemented on `11-render-cd-dev`, PR #39 open, CI green, **not merged**, live QA pending. `render.yaml` (dev db + backend + frontend, image-backed, free), `cd-dev.yml` (after green CI on `main`: build once, push to GHCR `:<sha>`/`:dev`, deploy hooks with `imgURL`, wait until both health checks report the SHA), `version` in health checks (contract change), `BACKEND_TIMEOUT_SECONDS` so a sleeping backend doesn't show the 503 page. Manual steps for David: Render workspace + Blueprint, two GitHub secrets, GHCR package public. One-time steps in `_docs/deploy.md`.
 - `/` now calls `getMe` and then `getDaily`; frontend test fakes that serve `/` must answer `/api/daily`.
 - Deadline: **Friday 2026-11-13** (Costa Rica time). Peer reviews of three other projects are also required to pass.
 
 ## In progress
 
-- Nothing.
+- #11: PR #39 (CI green). Order: merge (CD pushes the image to GHCR and skips the deploy: no secrets yet) → David makes the package public, applies the Blueprint, saves the two deploy hook secrets → re-run CD → live QA on dev → `## QA` on #11.
 
 ## Next up
 
-1. David reviews the groomed #11, including the database decision (dev on Render's free Postgres, prod on Neon in #12).
-2. On approval: implement #11 on branch `11-render-cd-dev`; David does the one-time Render / GitHub secrets / GHCR steps; QA on the live dev URL. Merge only with green CI, QA PASS and David's OK.
+1. David: OK to merge PR #39 before the live QA (the image only exists after CD runs on `main`).
+2. Then David's one-time steps (`_docs/deploy.md`), CD re-run, live QA, record on #11. Next: #12 (prod on Neon, rollback).
 
 ## Decisions
 
@@ -99,7 +99,7 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 
 - Starlette warns that `httpx` with `TestClient` is deprecated in favor of `httpx2`. Switching would be a new dependency; decide later if it becomes an error.
 
-- Database for prod: Render allows one free Postgres per workspace (expires after 30 days). Proposed in #11: dev on Render, prod on Neon free (#12). Pending David's answer.
+- Database for prod: decided — dev on Render's free Postgres, prod on Neon free (#12). David approved with #11.
 
 ## How to resume
 
