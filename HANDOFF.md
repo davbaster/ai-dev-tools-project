@@ -36,7 +36,6 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 
 1. David: click Copiar once on dev; then post the final QA on #11 and close it.
 2. PM grooms #12 (prod on Neon via PR `main` → `prod`, rollback). Note: Render syncs `render.yaml` automatically, so adding prod services there creates them on merge.
-2. Then David's one-time steps (`_docs/deploy.md`), CD re-run, live QA, record on #11. Next: #12 (prod on Neon, rollback).
 
 ## Decisions
 
