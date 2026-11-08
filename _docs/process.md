@@ -23,7 +23,7 @@ Create these labels once in the repo.
 4. **Implement** - the **Software Engineer** works on branch `<issue>-<slug>`, implements against the acceptance criteria, writes tests, runs `make lint` and `make test`, commits, opens a PR with `Closes #<issue>`, and comments on the issue what was done.
 5. **Verify** - the **QA Engineer** checks each acceptance criterion against the running code and the tests, and posts `## QA: PASS` or `## QA: FAIL` on the issue. It changes no code.
 6. **Fix loop** - on FAIL, the engineer fixes on the same branch and QA verifies again. After two FAILs on the same criterion, the orchestrator stops and asks David.
-7. **Merge** - on PASS and green CI, the orchestrator merges the PR. The issue closes. CD deploys `main` to **dev**.
+7. **Merge** - only on QA PASS **and** a green CI check on the PR (`.github/workflows/ci.yml`: `make install`, `lint`, `security`, `test`, `build`), the orchestrator merges the PR with David's OK. A red or still-running CI blocks the merge. The issue closes. CD deploys `main` to **dev**. To reproduce CI on your machine before pushing, run `make ci-local` (`act` + Docker).
 8. **Record** - the orchestrator appends to `_docs/log/YYYY-MM-DD.md` and overwrites `HANDOFF.md`.
 
 Production is never automatic: to release, open a PR from `main` to `prod` (`make promote-prod`). David reviews and merges it; merging deploys to **prod**.

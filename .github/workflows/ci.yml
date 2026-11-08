@@ -1,0 +1,44 @@
+# CI: the same make targets developers run locally (AGENTS.md → Commands).
+# Feature branches run through their PR; main and prod run on every push.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, prod]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: lint, security, tests, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      # Python comes from .python-version; uv downloads it if needed.
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          enable-cache: true
+
+      - name: Install
+        run: make install
+
+      - name: Lint
+        run: make lint
+
+      - name: Security
+        run: make security
+
+      # Unit, frontend, contract, then integration on a throwaway Postgres.
+      - name: Test
+        run: make test
+
+      - name: Docker build
+        run: make build
