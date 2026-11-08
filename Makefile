@@ -2,7 +2,7 @@
 # Compatible with GNU Make 3.81 (no .ONESHELL or newer features).
 
 .DEFAULT_GOAL := help
-.PHONY: help install dev-backend dev-frontend lint format test test-unit test-frontend test-contract test-integration migrate build up down logs
+.PHONY: help install dev-backend dev-frontend lint format security ci-local test test-unit test-frontend test-contract test-integration migrate build up down logs
 
 help: ## List every target
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  %-17s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -24,6 +24,14 @@ format: ## Format and auto-fix with ruff
 	uv run ruff format .
 	uv run ruff check --fix .
 
+# Ignorar un hallazgo solo con su ID y el motivo, por ejemplo:
+#   PIP_AUDIT_IGNORE = --ignore-vuln GHSA-xxxx  # sin arreglo publicado, no usamos la parte afectada
+PIP_AUDIT_IGNORE =
+
+security: ## Scan the code with bandit (medium+) and the installed dependencies with pip-audit
+	uv run bandit -r backend frontend -ll -q
+	uv run pip-audit --skip-editable --progress-spinner off $(PIP_AUDIT_IGNORE)
+
 test: test-unit test-frontend test-contract test-integration ## Run every suite, in order; stops at the first failing one (needs Docker)
 
 test-unit: ## Run the unit tests (no Docker needed)
@@ -37,9 +45,11 @@ test-contract: ## Check the backend and the frontend client against api/openapi.
 
 # Postgres descartable: proyecto Compose propio, puerto TEST_DB_PORT, se borra
 # siempre (también si fallan los tests). Con TEST_DATABASE_URL usa esa base.
+# TEST_DB_HOST: dónde se ve el puerto publicado (dentro de `act` no es localhost).
 TEST_DB_PORT ?= 5433
+TEST_DB_HOST ?= localhost
 TEST_DB = TEST_DB_PORT=$(TEST_DB_PORT) docker compose -f docker-compose.test.yml
-TEST_DB_URL = postgresql://para_luego:para_luego_local@localhost:$(TEST_DB_PORT)/para_luego_test
+TEST_DB_URL = postgresql://para_luego:para_luego_local@$(TEST_DB_HOST):$(TEST_DB_PORT)/para_luego_test
 
 test-integration: ## Run the integration tests on a throwaway Postgres (TEST_DB_PORT, default 5433; or TEST_DATABASE_URL=<url>)
 	@if [ -n "$(TEST_DATABASE_URL)" ]; then \
@@ -66,3 +76,10 @@ down: ## Stop and remove the containers (the database volume is kept)
 
 logs: ## Follow the frontend and backend logs (Ctrl+C to stop)
 	docker compose logs -f frontend backend
+
+# act corre ci.yml en un contenedor con Docker; la base de test publica su
+# puerto en el host, que desde ese contenedor es host.docker.internal.
+ACT_IMAGE = catthehacker/ubuntu:act-latest
+
+ci-local: ## Run .github/workflows/ci.yml locally with act (needs Docker and act)
+	act pull_request -W .github/workflows/ci.yml -P ubuntu-latest=$(ACT_IMAGE) --pull=false --env TEST_DB_HOST=host.docker.internal

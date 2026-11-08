@@ -65,12 +65,12 @@ The root `Makefile` is the single entry point, and CI calls the same targets. Pl
 - `make up` / `make down` - start / stop the full local system (frontend, backend, Postgres, observability stack, on-call agent, MCP server)
 - `make logs` - follow the frontend and backend logs
 - `make lint` - ruff (lint + format check)
-- `make security` - bandit + pip-audit
+- `make security` - bandit (backend + frontend, medium severity and above) + pip-audit (installed dependencies); an ignored finding goes in `PIP_AUDIT_IGNORE` with its ID and the reason
 - `make test` - every suite in order (`test-unit`, `test-frontend`, `test-contract`, `test-integration`), stopping at the first failure; needs Docker
 - `make test-unit` / `make test-frontend` / `make test-contract` - one suite, no Docker needed
 - `make test-integration` - starts a throwaway Postgres (`docker-compose.test.yml`, port 5433, override with `TEST_DB_PORT=<port>`), runs the integration tests and removes it, even when they fail. `TEST_DATABASE_URL=<url>` uses that database instead (never the dev `para_luego` one)
 - `make build` - build the Docker images
-- `make ci-local` - run the GitHub Actions workflows locally with `act`
+- `make ci-local` - run `.github/workflows/ci.yml` locally with `act` (Docker image `catthehacker/ubuntu:act-latest`; the throwaway test database is reached as `host.docker.internal` through `TEST_DB_HOST`)
 - `make promote-prod` - open the PR from `main` to `prod` (production deploys when a human merges it)
 - `make rollback ENV=<dev|prod> TAG=<previous tag>` - redeploy a previous image
 
@@ -113,6 +113,7 @@ Per-folder commands (run from the repo root):
 - Development agents work on a branch, never directly on `main`. Branch name: `<issue-number>-<short-slug>`. Only the on-call responder pushes fixes directly to `main`.
 - `prod` is the production branch. It changes only through a PR from `main`; merging it deploys to prod.
 - Reference the issue in commits and PRs (`Closes #7`).
+- A PR merges only with a green CI check and `## QA: PASS` on its issue. CI (`.github/workflows/ci.yml`) runs on every PR and on every push to `main` and `prod`.
 - `main` must always be deployable: CD deploys every push to `main` to dev after CI passes.
 
 ## Models
