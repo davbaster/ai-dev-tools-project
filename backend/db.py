@@ -1,5 +1,6 @@
 """Database engine and sessions. The engine is created on first use, not at import."""
 
+from collections.abc import Iterator
 from functools import lru_cache
 
 from sqlalchemy import Engine, create_engine
@@ -30,3 +31,12 @@ def get_engine() -> Engine:
 @lru_cache(maxsize=1)
 def get_sessionmaker() -> sessionmaker[Session]:
     return sessionmaker(bind=get_engine(), expire_on_commit=False)
+
+
+def get_db() -> Iterator[Session]:
+    """FastAPI dependency: one session per request. Tests override it."""
+    session = get_sessionmaker()()
+    try:
+        yield session
+    finally:
+        session.close()

@@ -1,18 +1,20 @@
 """The backend implements exactly the operations in api/openapi.yaml."""
 
-from fastapi.routing import APIRoute
+from fastapi.openapi.utils import get_openapi
 from fastapi.testclient import TestClient
 
 from backend.main import app
 
 
 def backend_operations() -> set[tuple[str, str]]:
+    # get_openapi recorre también los routers incluidos (anidados en esta versión
+    # de FastAPI); solo se usa para listar rutas, el contrato sigue siendo el YAML.
+    spec = get_openapi(title=app.title, version="0", routes=app.routes)
     return {
-        (method, route.path)
-        for route in app.routes
-        if isinstance(route, APIRoute) and route.path.startswith("/api/")
-        for method in route.methods
-        if method != "HEAD"
+        (method.upper(), path)
+        for path, item in spec["paths"].items()
+        if path.startswith("/api/")
+        for method in item
     }
 
 

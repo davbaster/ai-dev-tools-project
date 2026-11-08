@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-08, by the orchestrator session (#3 merged)
+**Last updated:** 2026-11-08, by the orchestrator session (#4 implemented, QA PASS, PR #27 open)
 
 ## Current state
 
@@ -16,18 +16,18 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 - #23 (split into frontend and backend with `api/openapi.yaml`): groomed, approved by David (with `httpx` runtime and `pyyaml` dev), implemented on `23-frontend-backend-split`, **QA: PASS**, PR #24 merged into `main` with David's OK (no CI yet). #23 is closed, branch deleted. Comments about the split posted on #3-#8, #11, #13, #18.
 - #3 (database models and Alembic migrations): groomed, approved by David (with `sqlalchemy`, `alembic`, `psycopg[binary]`), implemented on `3-db-models-migrations`, **QA: PASS**, PR #25 merged into `main` with David's OK (no CI yet). #3 is closed, branch deleted.
 - Code on `main`: `api/openapi.yaml` (`GET /api/health`), `backend/` (JSON API, `models.py`, `db.py` with a lazy engine), `migrations/` (revision `0001`: users, categories, items, incidents), `frontend/` (Jinja2 page + `httpx` client with an `OPERATIONS` table), 32 tests (unit, frontend, contract) + 8 integration tests, Compose with `frontend` (8000) + `backend` (8001, runs migrations before serving) + `db`. Makefile targets: `help`, `install`, `dev-backend`, `dev-frontend`, `lint`, `format`, `test`, `test-integration`, `migrate`, `build`, `up`, `down`, `logs`.
-- #4 (registration, login, logout) is **groomed**: label `groomed`, "Groomed" comment posted. No new dependencies. Follow-up #26 (login rate limiting) filed as `backlog`; admin creation noted on #18. Waiting for David's review.
+- #4 (registration, login, logout): groomed, approved by David, implemented on `4-auth`, **QA: PASS** (labels `groomed`, `qa-pass`). PR #27 is open, not merged. On that branch: contract operations `register`/`login`/`logout`/`getMe`, `backend/security.py` + `backend/auth.py`, migration `0002` (`auth_tokens`), Spanish login/register/home pages with the `pl_session` cookie, 60 tests + 21 integration tests. No new dependencies. Follow-up #26 (login rate limiting) filed as `backlog`; admin creation noted on #18.
+- Since #4, `/` requires a session; the backend status line from #23 is on the login page.
 - Deadline: **Friday 2026-11-13** (Costa Rica time). Peer reviews of three other projects are also required to pass.
 
 ## In progress
 
-- Nothing. Waiting for David to review #4.
+- PR #27 waits for David's OK to merge (no CI yet).
 
 ## Next up
 
-1. David reviews the groomed #4.
-2. Implement #4 on branch `4-auth`, QA, merge (no CI yet: local checks + David's OK).
-3. PM grooms #5 (items: create, list, filter by category, delete).
+1. David approves merging PR #27; the orchestrator merges it (closes #4).
+2. PM grooms #5 (items: create, list, filter by category, delete).
 
 ## Decisions
 
@@ -75,6 +75,9 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 | 2026-11-08 | Frontend cookie `pl_session` holds the opaque token: `HttpOnly`, `SameSite=Lax`, `Secure` outside local; no signing | Opaque token needs no signing; avoids a signing library. Plan section 5 updated |
 | 2026-11-08 | Usernames trimmed and lowercased, 3-50 chars `[a-z0-9._-]`; passwords 8-128 chars; same 401 for unknown user and wrong password | Case-insensitive uniqueness; don't reveal which usernames exist |
 | 2026-11-08 | UI text in Spanish | Default categories are Spanish; David is in Costa Rica |
+| 2026-11-08 | Backend contract test lists routes with FastAPI's `get_openapi` | FastAPI 0.162 nests included routers, so scanning `app.routes` missed them; the YAML stays the contract |
+| 2026-11-08 | Frontend parses form bodies with `urllib.parse` | FastAPI `Form` needs `python-multipart`, a new dependency |
+| 2026-11-08 | Backend 422 handler returns only `{field, message}` in Spanish | FastAPI's default echoes the input, including passwords |
 | 2026-11-08 | Merge PRs without CI until #10 adds it, on local `make lint` + `make test` and David's OK | No CI exists yet; David approved for #21 |
 
 ## Open questions

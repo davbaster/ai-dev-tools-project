@@ -2,17 +2,25 @@
 
 from pathlib import Path
 from typing import Annotated
+from urllib.parse import parse_qs
 
 from fastapi import Depends, FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 
-from frontend.api_client import BackendClient
+from frontend.api_client import BackendClient, BackendUnavailable
 from frontend.config import get_backend_url, get_deployment
 
 # Validated at import time so the frontend refuses to start with a bad value.
 DEPLOYMENT = get_deployment()
 BACKEND_URL = get_backend_url()
+
+SESSION_COOKIE = "pl_session"
+SESSION_MAX_AGE = 7 * 24 * 60 * 60  # igual que el token del backend
+SECURE_COOKIE = DEPLOYMENT in ("dev", "prod")
+
+UNAVAILABLE = "El servicio no está disponible, probá de nuevo en un momento."
+WRONG_CREDENTIALS = "Usuario o contraseña incorrectos"
 
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
 
@@ -24,21 +32,151 @@ def get_backend_client() -> BackendClient:
     return BackendClient(BACKEND_URL)
 
 
-@app.get("/", response_class=HTMLResponse)
-def index(
-    request: Request, backend: Annotated[BackendClient, Depends(get_backend_client)]
-):
-    health = backend.get_health()
-    if health is None:
-        backend_status = "unavailable"
-    else:
-        backend_status = f"{health['status']} ({health['deployment']})"
-    return templates.TemplateResponse(
-        request, "index.html", {"backend_status": backend_status}
+Backend = Annotated[BackendClient, Depends(get_backend_client)]
+
+
+async def read_form(request: Request) -> dict[str, str]:
+    """Parse an application/x-www-form-urlencoded body (no python-multipart)."""
+    fields = parse_qs((await request.body()).decode("utf-8"), keep_blank_values=True)
+    return {key: values[0] for key, values in fields.items()}
+
+
+def redirect(url: str) -> RedirectResponse:
+    return RedirectResponse(url, status_code=303)
+
+
+def set_session(response: Response, token: str) -> None:
+    response.set_cookie(
+        SESSION_COOKIE,
+        token,
+        max_age=SESSION_MAX_AGE,
+        path="/",
+        httponly=True,
+        samesite="lax",
+        secure=SECURE_COOKIE,
     )
 
 
+def clear_session(response: Response) -> None:
+    response.delete_cookie(
+        SESSION_COOKIE, path="/", httponly=True, samesite="lax", secure=SECURE_COOKIE
+    )
+
+
+def render(request: Request, name: str, status_code: int = 200, **context):
+    return templates.TemplateResponse(request, name, context, status_code=status_code)
+
+
+def unavailable_page(request: Request) -> HTMLResponse:
+    return render(request, "error.html", 503, message=UNAVAILABLE)
+
+
+def backend_status(backend: BackendClient) -> str:
+    health = backend.get_health()
+    if health is None:
+        return "unavailable"
+    return f"{health['status']} ({health['deployment']})"
+
+
+def error_messages(body) -> list[str]:
+    """Messages from a backend Error (409) or ValidationError (422) body."""
+    detail = (body or {}).get("detail")
+    if isinstance(detail, str):
+        return [detail]
+    if isinstance(detail, list):
+        return list(dict.fromkeys(item.get("message", "") for item in detail))
+    return ["Dato inválido."]
+
+
+@app.get("/", response_class=HTMLResponse)
+def index(request: Request, backend: Backend):
+    token = request.cookies.get(SESSION_COOKIE)
+    if not token:
+        return redirect("/login")
+    try:
+        me = backend.get_me(token)
+    except BackendUnavailable:
+        return unavailable_page(request)
+    if not me.ok:
+        # Token vencido o revocado: borrar la cookie y pedir login.
+        response = redirect("/login")
+        clear_session(response)
+        return response
+    return render(request, "index.html", user=me.body)
+
+
+@app.get("/login", response_class=HTMLResponse)
+def login_page(request: Request, backend: Backend):
+    return render(request, "login.html", backend_status=backend_status(backend))
+
+
+@app.post("/login", response_class=HTMLResponse)
+async def login(request: Request, backend: Backend):
+    form = await read_form(request)
+    username = form.get("username", "")
+    try:
+        result = backend.login(username, form.get("password", ""))
+    except BackendUnavailable:
+        return unavailable_page(request)
+    if result.status != 200:
+        return render(
+            request,
+            "login.html",
+            401,
+            errors=[WRONG_CREDENTIALS],
+            username=username,
+            backend_status=backend_status(backend),
+        )
+    response = redirect("/")
+    set_session(response, result.body["token"])
+    return response
+
+
+@app.get("/register", response_class=HTMLResponse)
+def register_page(request: Request):
+    return render(request, "register.html")
+
+
+@app.post("/register", response_class=HTMLResponse)
+async def register(request: Request, backend: Backend):
+    form = await read_form(request)
+    username = form.get("username", "")
+    password = form.get("password", "")
+    try:
+        created = backend.register(username, password)
+        if created.status != 201:
+            return render(
+                request,
+                "register.html",
+                created.status,
+                errors=error_messages(created.body),
+                username=username,
+            )
+        # Registro exitoso: iniciar sesión de una vez.
+        logged_in = backend.login(username, password)
+    except BackendUnavailable:
+        return unavailable_page(request)
+    if logged_in.status != 200:
+        return redirect("/login")
+    response = redirect("/")
+    set_session(response, logged_in.body["token"])
+    return response
+
+
+@app.post("/logout")
+def logout(request: Request, backend: Backend):
+    token = request.cookies.get(SESSION_COOKIE)
+    if token:
+        try:
+            backend.logout(token)
+        except BackendUnavailable:
+            pass  # La cookie se borra igual; el token vence solo.
+    response = redirect("/login")
+    clear_session(response)
+    return response
+
+
 @app.get("/health")
-def health() -> dict[str, str]:
+def health() -> JSONResponse:
     # Salud propia del frontend: no llama al backend.
-    return {"status": "ok", "deployment": DEPLOYMENT}
+    return JSONResponse({"status": "ok", "deployment": DEPLOYMENT})

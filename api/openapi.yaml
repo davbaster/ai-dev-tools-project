@@ -4,7 +4,7 @@
 openapi: 3.1.0
 info:
   title: Para Luego API
-  version: 0.1.0
+  version: 0.2.0
   description: JSON API served by the backend and called by the frontend.
 paths:
   /api/health:
@@ -18,7 +18,110 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Health"
+
+  /api/auth/register:
+    post:
+      operationId: register
+      summary: Create a user. The username is trimmed and lowercased.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: User created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "409":
+          description: The username is taken (in any letter case).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Invalid username or password. Never echoes the input.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+
+  /api/auth/login:
+    post:
+      operationId: login
+      summary: Exchange credentials for a token (valid 7 days).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Logged in.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "401":
+          description: Wrong username or password (same answer for both).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Malformed request. Never echoes the input.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+
+  /api/auth/logout:
+    post:
+      operationId: logout
+      summary: Revoke the token used in the request.
+      security:
+        - bearerAuth: []
+      responses:
+        "204":
+          description: Logged out; the token no longer works.
+        "401":
+          description: Missing, unknown or expired token.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/me:
+    get:
+      operationId: getMe
+      summary: The user the token belongs to.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: The current user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Missing, unknown or expired token.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Opaque token from `login`.
+
   schemas:
     Health:
       type: object
@@ -30,3 +133,68 @@ components:
         deployment:
           type: string
           enum: [local, dev, prod]
+
+    RegisterRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          description: 3-50 characters after trimming; letters, digits, ".", "_", "-".
+          minLength: 3
+          maxLength: 50
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+
+    User:
+      type: object
+      required: [id, username, is_admin]
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        is_admin:
+          type: boolean
+
+    LoginResponse:
+      type: object
+      required: [token, user]
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+
+    Error:
+      type: object
+      required: [detail]
+      properties:
+        detail:
+          type: string
+
+    ValidationError:
+      type: object
+      required: [detail]
+      properties:
+        detail:
+          type: array
+          items:
+            type: object
+            required: [field, message]
+            properties:
+              field:
+                type: string
+              message:
+                type: string

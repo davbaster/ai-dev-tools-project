@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Crear cuenta · Para Luego{% endblock %}
+{% block content %}
+<h2>Crear cuenta</h2>
+{% include "_errors.html" %}
+<form method="post" action="/register">
+  <label>Usuario
+    <input name="username" autocomplete="username" required value="{{ username or '' }}">
+  </label>
+  <label>Contraseña (8 a 128 caracteres)
+    <input name="password" type="password" autocomplete="new-password" required>
+  </label>
+  <button type="submit">Crear cuenta</button>
+</form>
+<p>¿Ya tenés cuenta? <a href="/login">Iniciá sesión</a></p>
+{% endblock %}
