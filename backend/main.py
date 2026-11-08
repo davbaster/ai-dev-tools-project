@@ -4,7 +4,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from backend import auth, categories, items
+from backend import auth, categories, daily, items
 from backend.config import get_deployment
 
 # Validated at import time so the backend refuses to start with a bad value.
@@ -30,6 +30,7 @@ app = FastAPI(title="Para Luego API", docs_url=None, redoc_url=None, openapi_url
 app.include_router(auth.router)
 app.include_router(categories.router)
 app.include_router(items.router)
+app.include_router(daily.router)
 
 
 @app.exception_handler(RequestValidationError)

@@ -51,6 +51,8 @@ class FakeBackend:
             if self.me_status == 200:
                 return httpx.Response(200, json=USER)
             return httpx.Response(401, json={"detail": "Sesión inválida o vencida."})
+        if path == "/api/daily":
+            return httpx.Response(200, json={"date": "2026-11-08", "items": []})
         if path == "/api/auth/logout":
             return httpx.Response(204)
         return httpx.Response(404, json={"detail": "Not Found"})
