@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-08, by the orchestrator session (#5 merged)
+**Last updated:** 2026-11-08, by the orchestrator session (#7 QA PASS, PR #34 waiting for David's OK to merge)
 
 ## Current state
 
@@ -20,16 +20,18 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 - Since #4, `/` requires a session; the backend status line from #23 is on the login page.
 - #6 (default + user-created categories): approved by David, implemented on `6-categories`, **QA: PASS**, PR #31 merged into `main` with David's OK (no CI yet). #6 is closed, branch deleted. It added contract operations `listCategories`/`createCategory`/`deleteCategory`, `backend/defaults.py` + `backend/categories.py`, migration `0003` (backfill), the `/categories` page; 71 tests + 32 integration tests.
 - #5 (items): approved by David, implemented on `5-items`, **QA: PASS**, PR #32 merged into `main` with David's OK (no CI yet). #5 is closed, branch deleted. It added contract operations `createItem`/`listItems`/`deleteItem`, `backend/items.py`, the `/items` page (save form, category filter, list, delete); 84 tests + 47 integration tests. Follow-ups filed as `backlog`: #28 (rename a category), #29 (edit/move an item), #30 (fetch the title automatically).
+- #7 (Daily dashboard): groomed, approved by David, implemented on `7-daily`, **QA: PASS** (label `qa-pass`), PR #34 open, **not merged** (waiting for David's OK; no CI yet). It adds contract operation `getDaily` (`GET /api/daily` → `Daily {date, items}`), `backend/daily.py` (pure `pick_daily` seeded with `user_id:date`, Costa Rica day at fixed UTC-6), the "Tu Daily" section on `/`; 93 tests + 51 integration tests. Follow-up #33 (reshuffle on demand) filed as `backlog`.
+- `/` now calls `getMe` and then `getDaily`; frontend test fakes that serve `/` must answer `/api/daily`.
 - Deadline: **Friday 2026-11-13** (Costa Rica time). Peer reviews of three other projects are also required to pass.
 
 ## In progress
 
-- Nothing.
+- PR #34 (#7) waiting for David's OK to merge.
 
 ## Next up
 
-1. PM grooms #7 (Daily dashboard: one random item per category).
-2. Implement, QA and merge #7 following `_docs/process.md`.
+1. With David's OK: merge PR #34, delete `7-daily`, re-run `make lint`, `make test`, `make test-integration` on `main`, record the merge.
+2. PM grooms #8 (Share via WhatsApp and Copy buttons), including the buttons on the Daily cards.
 
 ## Decisions
 
@@ -83,6 +85,7 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 | 2026-11-08 | Implement #6 (categories) before #5 (items) | Every item needs a category; new users have none until #6 |
 | 2026-11-08 | #5: only `http(s)://` URLs (max 2048); empty title becomes the URL; another user's category gets the same 422 as a missing one | Blocks `javascript:` links; saving stays fast; no id probing |
 | 2026-11-08 | #6: defaults created in the registration transaction; migration `0003` backfills existing users; names unique per user ignoring case; deleting a category with items is 409 | Matches the schema from #3; no half-created users |
+| 2026-11-08 | #7 Daily (approved by David): stable for the whole day, seeded with user id + local date; day changes at midnight Costa Rica (fixed UTC-6, no `zoneinfo`); computed per request, nothing stored | A Daily that changes on every refresh isn't a "Daily"; fixed offset avoids needing `tzdata` on Windows; no migration |
 | 2026-11-08 | Merge PRs without CI until #10 adds it, on local `make lint` + `make test` and David's OK | No CI exists yet; David approved for #21 |
 
 ## Open questions

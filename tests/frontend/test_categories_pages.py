@@ -160,6 +160,8 @@ def test_backend_down_gives_503(client, fake_backend):
 
 def test_home_links_to_categories(client, fake_backend):
     def me(request):
+        if request.url.path == "/api/daily":
+            return httpx.Response(200, json={"date": "2026-11-08", "items": []})
         return httpx.Response(200, json={"id": 1, "username": "ana", "is_admin": False})
 
     fake_backend(me)

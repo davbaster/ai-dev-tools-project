@@ -97,11 +97,12 @@ def index(request: Request, backend: Backend):
         return redirect("/login")
     try:
         me = backend.get_me(token)
+        daily = backend.get_daily(token) if me.ok else None
     except BackendUnavailable:
         return unavailable_page(request)
-    if not me.ok:
+    if not me.ok or not daily.ok:
         return session_expired()
-    return render(request, "index.html", user=me.body)
+    return render(request, "index.html", user=me.body, daily=daily.body["items"])
 
 
 def session_expired() -> RedirectResponse:

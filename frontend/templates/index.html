@@ -2,6 +2,24 @@
 {% block content %}
 <p>Hola, {{ user.username }}</p>
 <nav><a href="/items">Mis items</a> · <a href="/categories">Categorías</a></nav>
+
+<section class="daily">
+  <h2>Tu Daily</h2>
+  {% if daily %}
+  <ul class="items">
+    {% for item in daily %}
+    <li>
+      <span class="category">{{ item.category_name }}</span>
+      <a href="{{ item.url }}" target="_blank" rel="noopener noreferrer">{{ item.title }}</a>
+      {% if item.note %}<p class="note">{{ item.note }}</p>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="empty">Todavía no guardaste nada. <a href="/items">Guardá tu primer item</a>.</p>
+  {% endif %}
+</section>
+
 <form method="post" action="/logout">
   <button type="submit">Cerrar sesión</button>
 </form>

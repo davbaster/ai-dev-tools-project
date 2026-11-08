@@ -19,6 +19,7 @@ OPERATIONS: dict[str, tuple[str, str]] = {
     "listItems": ("GET", "/api/items"),
     "createItem": ("POST", "/api/items"),
     "deleteItem": ("DELETE", "/api/items/{item_id}"),
+    "getDaily": ("GET", "/api/daily"),
 }
 
 TIMEOUT_SECONDS = 2.0
@@ -106,3 +107,6 @@ class BackendClient:
 
     def delete_item(self, token: str, item_id: int) -> ApiResult:
         return self._call("deleteItem", token=token, path_params={"item_id": item_id})
+
+    def get_daily(self, token: str) -> ApiResult:
+        return self._call("getDaily", token=token)
