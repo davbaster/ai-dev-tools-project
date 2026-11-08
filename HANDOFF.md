@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-08, by the orchestrator session (#10 QA PASS, PR #37 waiting for David's OK to merge)
+**Last updated:** 2026-11-08, by the orchestrator session (#10 merged, CI live)
 
 ## Current state
 
@@ -15,7 +15,7 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 - #2 (Docker Compose with app + Postgres): groomed, approved by David, implemented on `2-docker-compose`, **QA: PASS**, PR #22 merged into `main` with David's OK (no CI yet). #2 is closed, branch deleted.
 - #23 (split into frontend and backend with `api/openapi.yaml`): groomed, approved by David (with `httpx` runtime and `pyyaml` dev), implemented on `23-frontend-backend-split`, **QA: PASS**, PR #24 merged into `main` with David's OK (no CI yet). #23 is closed, branch deleted. Comments about the split posted on #3-#8, #11, #13, #18.
 - #3 (database models and Alembic migrations): groomed, approved by David (with `sqlalchemy`, `alembic`, `psycopg[binary]`), implemented on `3-db-models-migrations`, **QA: PASS**, PR #25 merged into `main` with David's OK (no CI yet). #3 is closed, branch deleted.
-- Code on `main`: `api/openapi.yaml` (health, auth, category, item and daily operations), `backend/` (JSON API, `models.py`, `db.py`, `security.py`, `auth.py`, `defaults.py`, `categories.py`, `items.py`, `daily.py`), `migrations/` (`0001` users/categories/items/incidents, `0002` auth_tokens, `0003` default-categories backfill), `frontend/` (Spanish login/register/home (with "Tu Daily")/categories/items pages, `pl_session` cookie, `httpx` client with an `OPERATIONS` table, `share.py` + WhatsApp/Copiar buttons), 107 tests (unit 46, frontend 57, contract 4) + 51 integration tests (throwaway Postgres on 5433), Compose with `frontend` (8000) + `backend` (8001, runs migrations before serving) + `db`. Makefile targets: `help`, `install`, `dev-backend`, `dev-frontend`, `lint`, `format`, `test`, `test-unit`, `test-frontend`, `test-contract`, `test-integration`, `migrate`, `build`, `up`, `down`, `logs`.
+- Code on `main`: `api/openapi.yaml` (health, auth, category, item and daily operations), `backend/` (JSON API, `models.py`, `db.py`, `security.py`, `auth.py`, `defaults.py`, `categories.py`, `items.py`, `daily.py`), `migrations/` (`0001` users/categories/items/incidents, `0002` auth_tokens, `0003` default-categories backfill), `frontend/` (Spanish login/register/home (with "Tu Daily")/categories/items pages, `pl_session` cookie, `httpx` client with an `OPERATIONS` table, `share.py` + WhatsApp/Copiar buttons), 107 tests (unit 46, frontend 57, contract 4) + 51 integration tests (throwaway Postgres on 5433), CI in `.github/workflows/ci.yml`, Compose with `frontend` (8000) + `backend` (8001, runs migrations before serving) + `db`. Makefile targets: `help`, `install`, `dev-backend`, `dev-frontend`, `lint`, `format`, `security`, `ci-local`, `test`, `test-unit`, `test-frontend`, `test-contract`, `test-integration`, `migrate`, `build`, `up`, `down`, `logs`.
 - #4 (registration, login, logout): groomed, approved by David, implemented on `4-auth`, **QA: PASS**, PR #27 merged into `main` with David's OK (no CI yet). #4 is closed, branch deleted. It added contract operations `register`/`login`/`logout`/`getMe`, `backend/security.py` + `backend/auth.py`, migration `0002` (`auth_tokens`), Spanish login/register/home pages with the `pl_session` cookie, 60 tests + 21 integration tests. No new dependencies. Follow-up #26 (login rate limiting) filed as `backlog`; admin creation noted on #18.
 - Since #4, `/` requires a session; the backend status line from #23 is on the login page.
 - #6 (default + user-created categories): approved by David, implemented on `6-categories`, **QA: PASS**, PR #31 merged into `main` with David's OK (no CI yet). #6 is closed, branch deleted. It added contract operations `listCategories`/`createCategory`/`deleteCategory`, `backend/defaults.py` + `backend/categories.py`, migration `0003` (backfill), the `/categories` page; 71 tests + 32 integration tests.
@@ -23,18 +23,17 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 - #7 (Daily dashboard): groomed, approved by David, implemented on `7-daily`, **QA: PASS**, PR #34 merged into `main` with David's OK (no CI yet). #7 is closed, branch deleted. It adds contract operation `getDaily` (`GET /api/daily` → `Daily {date, items}`), `backend/daily.py` (pure `pick_daily` seeded with `user_id:date`, Costa Rica day at fixed UTC-6), the "Tu Daily" section on `/`; 93 tests + 51 integration tests. Follow-up #33 (reshuffle on demand) filed as `backlog`.
 - #8 (Share via WhatsApp and Copy): groomed, approved by David, implemented on `8-share`, **QA: PASS**, PR #35 merged into `main` with David's OK (no CI yet). #8 is closed, branch deleted. 106 tests + 51 integration tests. Frontend only, no backend or contract change: `frontend/share.py` builds the text (title, note if any, URL; URL once if the title is the URL) and the `wa.me` link; a shared partial puts both buttons on `/items` and on the Daily cards; one small vanilla script copies from an escaped attribute and shows "Copiado". No follow-ups filed. QA finding: WhatsApp's web page shows 4-byte emoji (🎵) as �; our link is valid UTF-8, nothing to fix on our side.
 - #9 (test suites): groomed, approved by David, implemented on `9-test-suites`, **QA: PASS**, PR #36 merged into `main` with David's OK (no CI yet). #9 is closed, branch deleted. Targets: `test-unit`, `test-frontend`, `test-contract`, and `test-integration` with a throwaway Postgres (own Compose project, port 5433 / `TEST_DB_PORT`, removed even on failure, `TEST_DATABASE_URL` override); `make test` runs all four (so it now needs Docker); one missing frontend flow test (login → save → list); `AGENTS.md` and testing-guidelines updated. `make test`: unit 46, frontend 57, contract 4, integration 51.
-- #10 (CI workflow): groomed, approved by David (with `bandit` and `pip-audit`), implemented on `10-ci`, **QA: PASS** (label `qa-pass`), PR #37 open with CI green, **not merged** (waiting for David's OK). Pending check: CI green on the push to `main` after the merge. `make security` (bandit on backend/frontend, medium+; pip-audit), `.github/workflows/ci.yml` (one job: `make install`, `lint`, `security`, `test`, `build`; on every PR and pushes to `main`/`prod`; no secrets; pinned actions; concurrency cancel), `make ci-local` with `act` (`TEST_DB_HOST=host.docker.internal`), docs say PRs merge only with green CI + QA PASS. Red-path check: throwaway PR #38 failed at Lint, later steps skipped; closed and branch deleted.
+- #10 (CI workflow): groomed, approved by David (with `bandit` and `pip-audit`), implemented on `10-ci`, **QA: PASS**, PR #37 merged into `main` with David's OK and green CI. #10 is closed, branch deleted. CI on the push to `main` green (run 42515414360). `make security` (bandit on backend/frontend, medium+; pip-audit), `.github/workflows/ci.yml` (one job: `make install`, `lint`, `security`, `test`, `build`; on every PR and pushes to `main`/`prod`; no secrets; pinned actions; concurrency cancel), `make ci-local` with `act` (`TEST_DB_HOST=host.docker.internal`), docs say PRs merge only with green CI + QA PASS. Red-path check: throwaway PR #38 failed at Lint, later steps skipped; closed and branch deleted.
 - `/` now calls `getMe` and then `getDaily`; frontend test fakes that serve `/` must answer `/api/daily`.
 - Deadline: **Friday 2026-11-13** (Costa Rica time). Peer reviews of three other projects are also required to pass.
 
 ## In progress
 
-- PR #37 (#10) waiting for David's OK to merge.
+- Nothing.
 
 ## Next up
 
-1. With David's OK: merge PR #37, delete `10-ci`, confirm CI green on the push to `main` (record it on #10), re-run `make lint` and `make test` on `main`, close the decision "Merge PRs without CI until #10".
-2. Next backlog issue: #11 (Render blueprint and CD to dev). Decide the Neon fallback with David there.
+1. PM grooms #11 (Render blueprint and CD to dev). Decide the Neon fallback with David there.
 
 ## Decisions
 
@@ -92,7 +91,7 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 | 2026-11-08 | #8 (approved by David): share text built in the frontend from the `Item` it already gets; format title / note / URL one per line; buttons on `/items` and the Daily; text in an escaped HTML attribute, read by one vanilla script | No API change needed; avoids user data inside `<script>`; plan section 3 and testing guidelines ask for both pages |
 | 2026-11-08 | #9 (approved by David): `make test` runs every suite including integration on a throwaway Postgres (port 5433); per-suite targets need no Docker | AGENTS.md and plan section 9 already promise it; CI (#10) calls the same targets; tests never touch dev data |
 | 2026-11-08 | #10 (approved by David, with `bandit` and `pip-audit`): CI is one job calling the make targets; runs on every PR and on pushes to `main`/`prod`; no branch protection on `main` (the responder pushes there) | Same commands locally and in CI; no duplicate runs; matches the on-call design |
-| 2026-11-08 | Merge PRs without CI until #10 adds it, on local `make lint` + `make test` and David's OK | No CI exists yet; David approved for #21 |
+| 2026-11-08 | ~~Merge PRs without CI until #10~~ Closed: since #10 (merged), PRs merge only with green CI + QA PASS + David's OK | CI exists now (`.github/workflows/ci.yml`) |
 
 ## Open questions
 
