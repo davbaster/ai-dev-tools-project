@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-08, by the orchestrator session (#11 QA FAIL on backend wake-up; fix PR #40 with CI green)
+**Last updated:** 2026-11-08, by the orchestrator session (#11: second QA FAIL on backend wake-up; asking David)
 
 ## Current state
 
@@ -30,11 +30,11 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 
 ## In progress
 
-- #11: live on dev. Frontend https://para-luego-dev-frontend.onrender.com, backend https://para-luego-dev-backend.onrender.com. CD deploys every green push to `main`. Live QA 17/17 + wake-up after 18 idle minutes OK. Copiar checked by David. **QA FAIL**: a sleeping backend behind an awake frontend gave 'Backend: unavailable' in 0.9 s. Fix PR #40 (`BACKEND_WAKE_SECONDS`, retries), CI green, waiting for David's OK to merge; then repeat the live check. **Dev database expires 2026-12-08.**
+- #11: live on dev. Frontend https://para-luego-dev-frontend.onrender.com, backend https://para-luego-dev-backend.onrender.com. CD deploys every green push to `main`. Live QA 17/17 + wake-up after 18 idle minutes OK. Copiar checked by David. **QA FAIL**: a sleeping backend behind an awake frontend gave 'Backend: unavailable' in 0.9 s. Fix PR #40 (`BACKEND_WAKE_SECONDS`, retries) merged, but the re-check **failed again**: 60 s of frontend retries never woke the backend (a curl from outside did). Hypothesis: Render doesn't wake free services on traffic from other Render services. Waiting for David (Render log line + how to proceed). **Dev database expires 2026-12-08.**
 
 ## Next up
 
-1. With David's OK: merge PR #40, let CD deploy, repeat the sleeping-backend check on dev, post the final QA on #11 and close it.
+1. David: send the frontend's `backend unavailable` log line from Render (around 22:28 UTC) and choose how to fix the wake-up (second QA FAIL on the same criterion).
 2. PM grooms #12 (prod on Neon via PR `main` → `prod`, rollback). Note: Render syncs `render.yaml` automatically, so adding prod services there creates them on merge.
 
 ## Decisions
