@@ -33,3 +33,5 @@ def get_database_url() -> str:
             "postgresql://user:password@localhost:5432/para_luego"
         )
     return to_psycopg_url(value)
+
+import os
