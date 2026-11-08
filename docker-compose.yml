@@ -26,10 +26,10 @@ services:
   # API JSON; el único servicio que habla con Postgres.
   backend:
     <<: *app-image
-    command: ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8001"]
+    # Aplica las migraciones antes de servir, así `make up` sigue siendo un solo comando.
+    command: ["sh", "-c", "alembic upgrade head && exec uvicorn backend.main:app --host 0.0.0.0 --port 8001"]
     environment:
       DEPLOYMENT: ${DEPLOYMENT:-local}
-      # El backend lo usa a partir de #3.
       DATABASE_URL: postgresql://${POSTGRES_USER:-para_luego}:${POSTGRES_PASSWORD:-para_luego_local}@db:5432/${POSTGRES_DB:-para_luego}
     ports:
       - "${BACKEND_PORT:-8001}:8001"

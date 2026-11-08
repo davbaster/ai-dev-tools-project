@@ -21,6 +21,8 @@ RUN uv sync --locked --no-dev
 
 COPY backend ./backend
 COPY frontend ./frontend
+COPY alembic.ini ./
+COPY migrations ./migrations
 
 RUN useradd --system --uid 10001 --no-create-home appuser
 USER appuser
