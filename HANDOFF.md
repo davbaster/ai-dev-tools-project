@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-08, by the orchestrator session (#4 implemented, QA PASS, PR #27 open)
+**Last updated:** 2026-11-08, by the orchestrator session (#4 merged)
 
 ## Current state
 
@@ -15,19 +15,19 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 - #2 (Docker Compose with app + Postgres): groomed, approved by David, implemented on `2-docker-compose`, **QA: PASS**, PR #22 merged into `main` with David's OK (no CI yet). #2 is closed, branch deleted.
 - #23 (split into frontend and backend with `api/openapi.yaml`): groomed, approved by David (with `httpx` runtime and `pyyaml` dev), implemented on `23-frontend-backend-split`, **QA: PASS**, PR #24 merged into `main` with David's OK (no CI yet). #23 is closed, branch deleted. Comments about the split posted on #3-#8, #11, #13, #18.
 - #3 (database models and Alembic migrations): groomed, approved by David (with `sqlalchemy`, `alembic`, `psycopg[binary]`), implemented on `3-db-models-migrations`, **QA: PASS**, PR #25 merged into `main` with David's OK (no CI yet). #3 is closed, branch deleted.
-- Code on `main`: `api/openapi.yaml` (`GET /api/health`), `backend/` (JSON API, `models.py`, `db.py` with a lazy engine), `migrations/` (revision `0001`: users, categories, items, incidents), `frontend/` (Jinja2 page + `httpx` client with an `OPERATIONS` table), 32 tests (unit, frontend, contract) + 8 integration tests, Compose with `frontend` (8000) + `backend` (8001, runs migrations before serving) + `db`. Makefile targets: `help`, `install`, `dev-backend`, `dev-frontend`, `lint`, `format`, `test`, `test-integration`, `migrate`, `build`, `up`, `down`, `logs`.
-- #4 (registration, login, logout): groomed, approved by David, implemented on `4-auth`, **QA: PASS** (labels `groomed`, `qa-pass`). PR #27 is open, not merged. On that branch: contract operations `register`/`login`/`logout`/`getMe`, `backend/security.py` + `backend/auth.py`, migration `0002` (`auth_tokens`), Spanish login/register/home pages with the `pl_session` cookie, 60 tests + 21 integration tests. No new dependencies. Follow-up #26 (login rate limiting) filed as `backlog`; admin creation noted on #18.
+- Code on `main`: `api/openapi.yaml` (health + auth operations), `backend/` (JSON API, `models.py`, `db.py`, `security.py`, `auth.py`), `migrations/` (`0001` users/categories/items/incidents, `0002` auth_tokens), `frontend/` (Spanish login/register/home pages, `pl_session` cookie, `httpx` client with an `OPERATIONS` table), 60 tests (unit, frontend, contract) + 21 integration tests, Compose with `frontend` (8000) + `backend` (8001, runs migrations before serving) + `db`. Makefile targets: `help`, `install`, `dev-backend`, `dev-frontend`, `lint`, `format`, `test`, `test-integration`, `migrate`, `build`, `up`, `down`, `logs`.
+- #4 (registration, login, logout): groomed, approved by David, implemented on `4-auth`, **QA: PASS**, PR #27 merged into `main` with David's OK (no CI yet). #4 is closed, branch deleted. It added contract operations `register`/`login`/`logout`/`getMe`, `backend/security.py` + `backend/auth.py`, migration `0002` (`auth_tokens`), Spanish login/register/home pages with the `pl_session` cookie, 60 tests + 21 integration tests. No new dependencies. Follow-up #26 (login rate limiting) filed as `backlog`; admin creation noted on #18.
 - Since #4, `/` requires a session; the backend status line from #23 is on the login page.
 - Deadline: **Friday 2026-11-13** (Costa Rica time). Peer reviews of three other projects are also required to pass.
 
 ## In progress
 
-- PR #27 waits for David's OK to merge (no CI yet).
+- Nothing.
 
 ## Next up
 
-1. David approves merging PR #27; the orchestrator merges it (closes #4).
-2. PM grooms #5 (items: create, list, filter by category, delete).
+1. PM grooms #5 (items: create, list, filter by category, delete), on top of the auth from #4.
+2. Implement, QA and merge #5 following `_docs/process.md`.
 
 ## Decisions
 
