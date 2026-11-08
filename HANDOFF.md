@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-08, by the orchestrator session (#1 implemented, QA PASS, PR #21 open)
+**Last updated:** 2026-11-08, by the orchestrator session (#1 merged)
 
 ## Current state
 
@@ -10,19 +10,18 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 - Docs committed and pushed to `davbaster/ai-dev-tools-project`.
 - Labels from `_docs/process.md` created: `backlog`, `groomed`, `in-progress`, `qa-pass`, `qa-fail`, `incident`, `needs-human`.
 - Issues #1-#20 created from the backlog seed (`_docs/plan.md` section 11), numbered in the same order. #2-#20 are labeled `backlog`.
-- #1 (repo scaffold): groomed, approved by David (with `httpx`), implemented on `1-repo-scaffold`, **QA: PASS** (labels `groomed`, `qa-pass`). PR #21 is open and mergeable, not merged.
+- #1 (repo scaffold): groomed, approved by David (with `httpx`), implemented on `1-repo-scaffold`, **QA: PASS**, PR #21 merged into `main` by the orchestrator with David's OK (no CI yet). #1 is closed, branch deleted.
 - Code now: uv project, `app/main.py` (`/`, `/health`), `app/config.py`, Makefile (`help`, `install`, `dev`, `lint`, `format`, `test`), 8 tests.
 - Deadline: **Friday 2026-11-13** (Costa Rica time). Peer reviews of three other projects are also required to pass.
 
 ## In progress
 
-- PR #21 waits for David's OK to merge. There is no CI yet (#10), so "green CI" from `_docs/process.md` cannot be met; the merge relies on local `make lint` and `make test`.
+- Nothing.
 
 ## Next up
 
-1. David approves merging PR #21 without CI; the orchestrator merges it (closes #1).
-2. PM grooms #2 (Docker Compose with app + Postgres).
-3. Implement, QA and merge #2 following `_docs/process.md`.
+1. PM grooms #2 (Docker Compose with app + Postgres).
+2. Implement, QA and merge #2 following `_docs/process.md`.
 
 ## Decisions
 
@@ -48,10 +47,10 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 | 2026-11-08 | Makefile must work with GNU Make 3.81 | That is the `make` on David's Windows machine |
 | 2026-11-08 | `httpx` approved as a dev dependency | David approved; FastAPI's `TestClient` needs it |
 | 2026-11-08 | Roles played in this one session (no subagents) for #1 | Small task; QA comment says so |
+| 2026-11-08 | Merge PRs without CI until #10 adds it, on local `make lint` + `make test` and David's OK | No CI exists yet; David approved for #21 |
 
 ## Open questions
 
-- Merge PR #21 without CI (none exists until #10)?
 - Starlette warns that `httpx` with `TestClient` is deprecated in favor of `httpx2`. Switching would be a new dependency; decide later if it becomes an error.
 
 - If Render's free tier allows only one free Postgres, use Neon for the second database? Decide with David when reaching issue 11 (Render blueprint).
