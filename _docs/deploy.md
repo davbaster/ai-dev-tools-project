@@ -21,7 +21,7 @@ Check what dev runs: `curl https://para-luego-dev-backend.onrender.com/api/healt
 |---|---|---|
 | `para-luego-dev-backend` | web, image, free | `sh /app/backend/start.sh`: migrations, then uvicorn on port 8001. `DATABASE_URL` from the database. |
 | `para-luego-dev-frontend` | web, image, free | uvicorn on port 8000. `BACKEND_URL` = the backend's public URL; `BACKEND_TIMEOUT_SECONDS=60`. |
-| `para-luego-dev-db` | Postgres 16, free | One free Postgres per workspace. **Expires 30 days after creation** (then 14 days of grace before deletion). |
+| `para-luego-dev-db` | Postgres 16, free | One free Postgres per workspace. **Expires 30 days after creation** (then 14 days of grace before deletion). Created 2026-11-08: **expires 2026-12-08**. |
 
 Free plan limits that shape this (checked 2026-11-08): free web services can't receive private-network traffic (so the frontend uses the backend's public URL), have no pre-deploy command (so migrations run at start), and sleep after 15 minutes without traffic (about a minute to wake up). Prod's database goes to Neon's free tier in #12, because Render allows only one free Postgres.
 
@@ -29,9 +29,9 @@ Free plan limits that shape this (checked 2026-11-08): free web services can't r
 
 These are account changes, so a person does them once:
 
-1. **GHCR image:** after the first CD run, open the package `ai-dev-tools-project` under your GitHub profile → *Package settings* → *Change visibility* → **Public**, so Render can pull it without a credential. Check with `docker logout ghcr.io && docker pull ghcr.io/davbaster/ai-dev-tools-project:dev`.
+1. **GHCR image:** (done 2026-11-08: the package inherited the public repo's visibility; only check it) after the first CD run, open the package `ai-dev-tools-project` under your GitHub profile → *Package settings* → *Change visibility* → **Public**, so Render can pull it without a credential. Check with `docker logout ghcr.io && docker pull ghcr.io/davbaster/ai-dev-tools-project:dev`.
 2. **Render:** sign in to Render, *New* → *Blueprint*, pick this repository and apply `render.yaml`. It creates the database and the two services. If Render changes a service name (because it's taken), update `BACKEND_URL` in `render.yaml` and `DEV_BACKEND_URL` / `DEV_FRONTEND_URL` in the `Makefile`.
-3. **Deploy hooks:** in each service → *Settings* → *Deploy Hook*, copy the URL and save it as a repository secret (GitHub → *Settings* → *Secrets and variables* → *Actions*): `RENDER_DEV_BACKEND_DEPLOY_HOOK` and `RENDER_DEV_FRONTEND_DEPLOY_HOOK`. Or `gh secret set RENDER_DEV_BACKEND_DEPLOY_HOOK` and paste it. Never commit them.
+3. **Deploy hooks:** in each service → *Settings* → *Deploy Hook*, copy the URL and save it as a **repository** secret (not an environment secret: `cd-dev.yml` declares no environment) (GitHub → *Settings* → *Secrets and variables* → *Actions*): `RENDER_DEV_BACKEND_DEPLOY_HOOK` and `RENDER_DEV_FRONTEND_DEPLOY_HOOK`. Or `gh secret set RENDER_DEV_BACKEND_DEPLOY_HOOK` and paste it. Never commit them.
 4. **Database expiry:** write down the creation date; the free database stops working 30 days later. Recreating it means a new empty database (re-run the Blueprint or create one with the same name).
 
 ## Troubleshooting

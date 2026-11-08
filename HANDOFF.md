@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-08, by the orchestrator session (#11: image on GHCR, waiting for David's Render steps)
+**Last updated:** 2026-11-08, by the orchestrator session (#11 live on dev; one manual Copiar check left)
 
 ## Current state
 
@@ -30,11 +30,12 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 
 ## In progress
 
-- #11: PR #39 merged (with David's OK, before the live QA); issue reopened. CI and CD on `main` work: image `ghcr.io/davbaster/ai-dev-tools-project:dev` is public; deploy skipped (no secrets yet). Waiting for David to apply the Blueprint and save the two deploy hook secrets; then re-run CD and live QA.
+- #11: live on dev. Frontend https://para-luego-dev-frontend.onrender.com, backend https://para-luego-dev-backend.onrender.com. CD deploys every green push to `main`. Live QA 17/17 + wake-up after 18 idle minutes OK. Left: David clicks Copiar once on dev in his browser (the built-in browser pane can't use the clipboard on external sites), then final `## QA` and close #11. **Dev database expires 2026-12-08.**
 
 ## Next up
 
-1. David: apply the Render Blueprint and save the two deploy hook secrets (`_docs/deploy.md` steps 2-3).
+1. David: click Copiar once on dev; then post the final QA on #11 and close it.
+2. PM grooms #12 (prod on Neon via PR `main` → `prod`, rollback). Note: Render syncs `render.yaml` automatically, so adding prod services there creates them on merge.
 2. Then David's one-time steps (`_docs/deploy.md`), CD re-run, live QA, record on #11. Next: #12 (prod on Neon, rollback).
 
 ## Decisions
