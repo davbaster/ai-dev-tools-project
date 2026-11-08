@@ -20,10 +20,29 @@
     .category { color: #555; font-size: .85rem; margin-left: .5rem; }
     .note { margin: .25rem 0; color: #333; }
     nav.filter { margin: 1rem 0; }
+    .share { display: inline-flex; gap: .5rem; align-items: center; margin: .25rem .5rem .25rem 0; }
+    .share a.button { padding: .5rem; border: 1px solid #767676; border-radius: 2px; color: inherit; text-decoration: none; }
+    .copied { color: #1b5e20; font-size: .85rem; }
   </style>
 </head>
 <body>
   <h1>Para Luego</h1>
   {% block content %}{% endblock %}
+  <script>
+    // Botón Copiar: el texto viene escapado en data-copy, nunca dentro del script.
+    document.addEventListener("click", async (event) => {
+      const button = event.target.closest("button[data-copy]");
+      if (!button) return;
+      const status = button.parentElement.querySelector(".copied");
+      try {
+        await navigator.clipboard.writeText(button.dataset.copy);
+        status.textContent = "Copiado";
+      } catch {
+        status.textContent = "No se pudo copiar";
+      }
+      clearTimeout(button.copyTimer);
+      button.copyTimer = setTimeout(() => { status.textContent = ""; }, 2000);
+    });
+  </script>
 </body>
 </html>

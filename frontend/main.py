@@ -10,6 +10,7 @@ from fastapi.templating import Jinja2Templates
 
 from frontend.api_client import BackendClient, BackendUnavailable
 from frontend.config import get_backend_url, get_deployment
+from frontend.share import share_text, whatsapp_url
 
 # Validated at import time so the frontend refuses to start with a bad value.
 DEPLOYMENT = get_deployment()
@@ -23,6 +24,7 @@ UNAVAILABLE = "El servicio no está disponible, probá de nuevo en un momento."
 WRONG_CREDENTIALS = "Usuario o contraseña incorrectos"
 
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
+templates.env.globals.update(share_text=share_text, whatsapp_url=whatsapp_url)
 
 app = FastAPI(title="Para Luego", docs_url=None, redoc_url=None, openapi_url=None)
 
