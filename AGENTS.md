@@ -59,14 +59,16 @@ Some folders don't exist until their backlog task creates them.
 
 ## Commands
 
-The root `Makefile` is the single entry point, and CI calls the same targets. Plain `make` lists every target. Variables go after the target (`make test-integration DATABASE_URL=<url>`). A failing command stops `make` with a non-zero exit code.
+The root `Makefile` is the single entry point, and CI calls the same targets. Plain `make` lists every target. Variables go after the target (`make test-integration TEST_DATABASE_URL=<url>`). A failing command stops `make` with a non-zero exit code.
 
 - `make install` - install dependencies (uv)
 - `make up` / `make down` - start / stop the full local system (frontend, backend, Postgres, observability stack, on-call agent, MCP server)
 - `make logs` - follow the frontend and backend logs
 - `make lint` - ruff (lint + format check)
 - `make security` - bandit + pip-audit
-- `make test` - every suite (`test-unit`, `test-frontend`, `test-integration`); integration starts its own disposable Postgres
+- `make test` - every suite in order (`test-unit`, `test-frontend`, `test-contract`, `test-integration`), stopping at the first failure; needs Docker
+- `make test-unit` / `make test-frontend` / `make test-contract` - one suite, no Docker needed
+- `make test-integration` - starts a throwaway Postgres (`docker-compose.test.yml`, port 5433, override with `TEST_DB_PORT=<port>`), runs the integration tests and removes it, even when they fail. `TEST_DATABASE_URL=<url>` uses that database instead (never the dev `para_luego` one)
 - `make build` - build the Docker images
 - `make ci-local` - run the GitHub Actions workflows locally with `act`
 - `make promote-prod` - open the PR from `main` to `prod` (production deploys when a human merges it)

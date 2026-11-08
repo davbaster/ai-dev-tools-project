@@ -16,8 +16,9 @@ from backend.db import create_db_engine
 
 ROOT = Path(__file__).resolve().parents[2]
 DEV_DATABASE_NAME = "para_luego"
+# La base descartable de `make test-integration` (docker-compose.test.yml).
 DEFAULT_TEST_DATABASE_URL = (
-    "postgresql://para_luego:para_luego_local@localhost:5432/para_luego_test"
+    "postgresql://para_luego:para_luego_local@localhost:5433/para_luego_test"
 )
 
 
@@ -63,7 +64,8 @@ def database_url() -> str:
     except OperationalError:
         pytest.exit(
             f"Postgres is not reachable at {url.host}:{url.port}. "
-            "Start it with `make up` (or set TEST_DATABASE_URL).",
+            "Run `make test-integration` (it starts a throwaway Postgres) "
+            "or set TEST_DATABASE_URL.",
             returncode=1,
         )
     finally:
