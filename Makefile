@@ -2,7 +2,7 @@
 # Compatible with GNU Make 3.81 (no .ONESHELL or newer features).
 
 .DEFAULT_GOAL := help
-.PHONY: help install dev-backend dev-frontend lint format test test-integration migrate build up down logs
+.PHONY: help install dev-backend dev-frontend lint format test test-unit test-frontend test-contract test-integration migrate build up down logs
 
 help: ## List every target
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  %-17s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -24,11 +24,33 @@ format: ## Format and auto-fix with ruff
 	uv run ruff format .
 	uv run ruff check --fix .
 
-test: ## Run the unit, frontend and contract tests (no Docker needed)
-	uv run pytest --ignore=tests/integration
+test: test-unit test-frontend test-contract test-integration ## Run every suite, in order; stops at the first failing one (needs Docker)
 
-test-integration: ## Run the integration tests on Postgres (TEST_DATABASE_URL, default: the Compose db)
-	uv run pytest tests/integration
+test-unit: ## Run the unit tests (no Docker needed)
+	uv run pytest tests/unit
+
+test-frontend: ## Run the frontend tests with a fake backend (no Docker needed)
+	uv run pytest tests/frontend
+
+test-contract: ## Check the backend and the frontend client against api/openapi.yaml (no Docker needed)
+	uv run pytest tests/contract
+
+# Postgres descartable: proyecto Compose propio, puerto TEST_DB_PORT, se borra
+# siempre (también si fallan los tests). Con TEST_DATABASE_URL usa esa base.
+TEST_DB_PORT ?= 5433
+TEST_DB = TEST_DB_PORT=$(TEST_DB_PORT) docker compose -f docker-compose.test.yml
+TEST_DB_URL = postgresql://para_luego:para_luego_local@localhost:$(TEST_DB_PORT)/para_luego_test
+
+test-integration: ## Run the integration tests on a throwaway Postgres (TEST_DB_PORT, default 5433; or TEST_DATABASE_URL=<url>)
+	@if [ -n "$(TEST_DATABASE_URL)" ]; then \
+		TEST_DATABASE_URL="$(TEST_DATABASE_URL)" uv run pytest tests/integration; \
+	else \
+		$(TEST_DB) down -v --remove-orphans >/dev/null 2>&1; \
+		$(TEST_DB) up -d --wait || { $(TEST_DB) down -v >/dev/null 2>&1; exit 1; }; \
+		TEST_DATABASE_URL="$(TEST_DB_URL)" uv run pytest tests/integration; status=$$?; \
+		$(TEST_DB) down -v; \
+		exit $$status; \
+	fi
 
 migrate: ## Apply database migrations to DATABASE_URL
 	uv run alembic upgrade head

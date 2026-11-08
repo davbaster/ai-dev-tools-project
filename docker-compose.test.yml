@@ -1,0 +1,20 @@
+# Throwaway Postgres for `make test-integration`. Its own project, so it never
+# touches the `make up` database. Data lives in tmpfs and is gone on `down`.
+name: para-luego-test
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: para_luego
+      POSTGRES_PASSWORD: para_luego_local
+      POSTGRES_DB: para_luego_test
+    ports:
+      - "${TEST_DB_PORT:-5433}:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U para_luego -d para_luego_test"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
