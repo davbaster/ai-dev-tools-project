@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-08, by the orchestrator session (#3 implemented, QA PASS, PR #25 open)
+**Last updated:** 2026-11-08, by the orchestrator session (#3 merged)
 
 ## Current state
 
@@ -14,18 +14,18 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 - #1 (repo scaffold): groomed, approved by David (with `httpx`), implemented on `1-repo-scaffold`, **QA: PASS**, PR #21 merged into `main` by the orchestrator with David's OK (no CI yet). #1 is closed, branch deleted.
 - #2 (Docker Compose with app + Postgres): groomed, approved by David, implemented on `2-docker-compose`, **QA: PASS**, PR #22 merged into `main` with David's OK (no CI yet). #2 is closed, branch deleted.
 - #23 (split into frontend and backend with `api/openapi.yaml`): groomed, approved by David (with `httpx` runtime and `pyyaml` dev), implemented on `23-frontend-backend-split`, **QA: PASS**, PR #24 merged into `main` with David's OK (no CI yet). #23 is closed, branch deleted. Comments about the split posted on #3-#8, #11, #13, #18.
-- #3 (database models and Alembic migrations): groomed, approved by David (with `sqlalchemy`, `alembic`, `psycopg[binary]`), implemented on `3-db-models-migrations`, **QA: PASS** (labels `groomed`, `qa-pass`). PR #25 is open, not merged. On that branch: `backend/models.py`, `backend/db.py`, `alembic.ini`, `migrations/` (revision `0001`), `tests/integration/` (8 tests), Makefile `migrate` and `test-integration`; the Compose backend runs migrations before serving.
-- Code on `main`: `api/openapi.yaml` (`GET /api/health`), `backend/` (JSON API), `frontend/` (Jinja2 page + `httpx` client with an `OPERATIONS` table), 27 tests (unit, frontend, contract), Compose with `frontend` (8000) + `backend` (8001) + `db`. Makefile targets: `help`, `install`, `dev-backend`, `dev-frontend`, `lint`, `format`, `test`, `build`, `up`, `down`, `logs`.
+- #3 (database models and Alembic migrations): groomed, approved by David (with `sqlalchemy`, `alembic`, `psycopg[binary]`), implemented on `3-db-models-migrations`, **QA: PASS**, PR #25 merged into `main` with David's OK (no CI yet). #3 is closed, branch deleted.
+- Code on `main`: `api/openapi.yaml` (`GET /api/health`), `backend/` (JSON API, `models.py`, `db.py` with a lazy engine), `migrations/` (revision `0001`: users, categories, items, incidents), `frontend/` (Jinja2 page + `httpx` client with an `OPERATIONS` table), 32 tests (unit, frontend, contract) + 8 integration tests, Compose with `frontend` (8000) + `backend` (8001, runs migrations before serving) + `db`. Makefile targets: `help`, `install`, `dev-backend`, `dev-frontend`, `lint`, `format`, `test`, `test-integration`, `migrate`, `build`, `up`, `down`, `logs`.
 - Deadline: **Friday 2026-11-13** (Costa Rica time). Peer reviews of three other projects are also required to pass.
 
 ## In progress
 
-- PR #25 waits for David's OK to merge (no CI yet).
+- Nothing.
 
 ## Next up
 
-1. David approves merging PR #25; the orchestrator merges it (closes #3).
-2. PM grooms #4 (registration, login, logout across frontend and backend).
+1. PM grooms #4 (registration, login, logout across frontend and backend). A password-hashing library needs David's approval.
+2. Implement, QA and merge #4 following `_docs/process.md`.
 
 ## Decisions
 
