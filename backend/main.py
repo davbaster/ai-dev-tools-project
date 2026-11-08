@@ -4,7 +4,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from backend import auth, categories
+from backend import auth, categories, items
 from backend.config import get_deployment
 
 # Validated at import time so the backend refuses to start with a bad value.
@@ -18,6 +18,10 @@ FIELD_MESSAGES = {
     ),
     "password": "La contraseña debe tener entre 8 y 128 caracteres.",
     "name": "El nombre debe tener entre 1 y 50 caracteres.",
+    "url": "La URL debe empezar con http:// o https:// (máximo 2048 caracteres).",
+    "title": "El título puede tener hasta 300 caracteres.",
+    "note": "La nota puede tener hasta 1000 caracteres.",
+    "category_id": "Elegí una de tus categorías.",
 }
 DEFAULT_FIELD_MESSAGE = "Dato inválido."
 
@@ -25,6 +29,7 @@ DEFAULT_FIELD_MESSAGE = "Dato inválido."
 app = FastAPI(title="Para Luego API", docs_url=None, redoc_url=None, openapi_url=None)
 app.include_router(auth.router)
 app.include_router(categories.router)
+app.include_router(items.router)
 
 
 @app.exception_handler(RequestValidationError)

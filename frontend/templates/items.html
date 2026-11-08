@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Mis items · Para Luego{% endblock %}
+{% block content %}
+<p><a href="/">Inicio</a> · <a href="/categories">Categorías</a></p>
+<h2>Mis items</h2>
+{% include "_errors.html" %}
+
+<form method="post" action="/items" class="save">
+  <input type="hidden" name="filter" value="{{ category_filter or '' }}">
+  <label>URL
+    <input name="url" type="url" required maxlength="2048" placeholder="https://..." value="{{ values.url or '' }}">
+  </label>
+  <label>Título (opcional)
+    <input name="title" maxlength="300" value="{{ values.title or '' }}">
+  </label>
+  <label>Categoría
+    <select name="category_id" required>
+      {% for category in categories %}
+      <option value="{{ category.id }}"
+        {% if (values.category_id or category_filter) == category.id %}selected{% endif %}>{{ category.name }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Nota (opcional)
+    <textarea name="note" maxlength="1000" rows="2">{{ values.note or '' }}</textarea>
+  </label>
+  <button type="submit">Guardar</button>
+</form>
+
+<nav class="filter">
+  Filtrar:
+  <a href="/items" {% if not category_filter %}aria-current="page"{% endif %}>Todas</a>
+  {% for category in categories %}
+  · <a href="/items?category_id={{ category.id }}" {% if category_filter == category.id %}aria-current="page"{% endif %}>{{ category.name }}</a>
+  {% endfor %}
+</nav>
+
+{% if items %}
+<ul class="items">
+  {% for item in items %}
+  <li>
+    <a href="{{ item.url }}" target="_blank" rel="noopener noreferrer">{{ item.title }}</a>
+    <span class="category">{{ item.category_name }}</span>
+    {% if item.note %}<p class="note">{{ item.note }}</p>{% endif %}
+    <form method="post" action="/items/{{ item.id }}/delete" class="inline">
+      <input type="hidden" name="filter" value="{{ category_filter or '' }}">
+      <button type="submit">Borrar</button>
+    </form>
+  </li>
+  {% endfor %}
+</ul>
+{% elif category_filter %}
+<p class="empty">No hay items en esta categoría.</p>
+{% else %}
+<p class="empty">Todavía no guardaste nada.</p>
+{% endif %}
+{% endblock %}
