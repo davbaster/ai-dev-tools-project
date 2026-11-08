@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-08, by the orchestrator session (#1 merged, #2 groomed)
+**Last updated:** 2026-11-08, by the orchestrator session (#2 implemented, QA PASS, PR #22 open)
 
 ## Current state
 
@@ -11,19 +11,18 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 - Labels from `_docs/process.md` created: `backlog`, `groomed`, `in-progress`, `qa-pass`, `qa-fail`, `incident`, `needs-human`.
 - Issues #1-#20 created from the backlog seed (`_docs/plan.md` section 11), numbered in the same order. #2-#20 are labeled `backlog`.
 - #1 (repo scaffold): groomed, approved by David (with `httpx`), implemented on `1-repo-scaffold`, **QA: PASS**, PR #21 merged into `main` by the orchestrator with David's OK (no CI yet). #1 is closed, branch deleted.
-- #2 (Docker Compose with app + Postgres) is **groomed**: label `groomed`, "Groomed" comment posted. Waiting for David's review.
-- Code now: uv project, `app/main.py` (`/`, `/health`), `app/config.py`, Makefile (`help`, `install`, `dev`, `lint`, `format`, `test`), 8 tests.
+- #2 (Docker Compose with app + Postgres): groomed, approved by David, implemented on `2-docker-compose`, **QA: PASS** (labels `groomed`, `qa-pass`). PR #22 is open, not merged.
+- Code now: uv project, `app/main.py` (`/`, `/health`), `app/config.py`, 8 tests; on the #2 branch also `Dockerfile`, `.dockerignore`, `docker-compose.yml` (app + `postgres:16`). Makefile targets: `help`, `install`, `dev`, `lint`, `format`, `test`, plus `build`, `up`, `down`, `logs` from #2.
 - Deadline: **Friday 2026-11-13** (Costa Rica time). Peer reviews of three other projects are also required to pass.
 
 ## In progress
 
-- Nothing.
+- PR #22 waits for David's OK to merge (no CI yet).
 
 ## Next up
 
-1. David reviews the groomed #2.
-2. Implement #2 on branch `2-docker-compose`, QA, merge (no CI yet: local checks + David's OK).
-3. PM grooms #3 (database models and Alembic migrations).
+1. David approves merging PR #22; the orchestrator merges it (closes #2).
+2. PM grooms #3 (database models and Alembic migrations). It will need new dependencies (SQLAlchemy, Alembic, a Postgres driver), which David must approve.
 
 ## Decisions
 
@@ -50,6 +49,8 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 | 2026-11-08 | `httpx` approved as a dev dependency | David approved; FastAPI's `TestClient` needs it |
 | 2026-11-08 | Roles played in this one session (no subagents) for #1 | Small task; QA comment says so |
 | 2026-11-08 | #2: `make up` uses `docker compose up -d --build --wait`; works without `.env` (local-only defaults); Postgres data in a named volume that survives `make down`; host ports overridable with `APP_PORT`/`DB_PORT` | One command from a fresh clone; keep dev data between restarts |
+| 2026-11-08 | #2 busy-port criterion reworded by the PM: Docker's bind error, not the exact Linux text | Docker Desktop on Windows prints "ports are not available ... bind" |
+| 2026-11-08 | `DATABASE_URL` in compose uses the plain `postgresql://` scheme | The driver is chosen in #3, which can adjust the scheme |
 | 2026-11-08 | Merge PRs without CI until #10 adds it, on local `make lint` + `make test` and David's OK | No CI exists yet; David approved for #21 |
 
 ## Open questions
