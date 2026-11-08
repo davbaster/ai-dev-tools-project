@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-08, by the orchestrator session (#4 merged; #6 and #5 groomed)
+**Last updated:** 2026-11-08, by the orchestrator session (#6 implemented, QA PASS, PR #31 open)
 
 ## Current state
 
@@ -18,18 +18,18 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 - Code on `main`: `api/openapi.yaml` (health + auth operations), `backend/` (JSON API, `models.py`, `db.py`, `security.py`, `auth.py`), `migrations/` (`0001` users/categories/items/incidents, `0002` auth_tokens), `frontend/` (Spanish login/register/home pages, `pl_session` cookie, `httpx` client with an `OPERATIONS` table), 60 tests (unit, frontend, contract) + 21 integration tests, Compose with `frontend` (8000) + `backend` (8001, runs migrations before serving) + `db`. Makefile targets: `help`, `install`, `dev-backend`, `dev-frontend`, `lint`, `format`, `test`, `test-integration`, `migrate`, `build`, `up`, `down`, `logs`.
 - #4 (registration, login, logout): groomed, approved by David, implemented on `4-auth`, **QA: PASS**, PR #27 merged into `main` with David's OK (no CI yet). #4 is closed, branch deleted. It added contract operations `register`/`login`/`logout`/`getMe`, `backend/security.py` + `backend/auth.py`, migration `0002` (`auth_tokens`), Spanish login/register/home pages with the `pl_session` cookie, 60 tests + 21 integration tests. No new dependencies. Follow-up #26 (login rate limiting) filed as `backlog`; admin creation noted on #18.
 - Since #4, `/` requires a session; the backend status line from #23 is on the login page.
-- #6 (default + user-created categories) and #5 (items) are **groomed**. **#6 goes before #5**: every item needs a category and new users have none until #6. Follow-ups filed as `backlog`: #28 (rename a category), #29 (edit/move an item), #30 (fetch the title automatically). Waiting for David's review.
+- #6 (default + user-created categories): approved by David, implemented on `6-categories`, **QA: PASS** (labels `groomed`, `qa-pass`). PR #31 is open, not merged. It adds contract operations `listCategories`/`createCategory`/`deleteCategory`, `backend/defaults.py` + `backend/categories.py`, migration `0003` (backfill), the `/categories` page; 71 tests + 32 integration tests.
+- #5 (items) is **groomed** and approved; it goes after #6 (every item needs a category). Follow-ups filed as `backlog`: #28 (rename a category), #29 (edit/move an item), #30 (fetch the title automatically).
 - Deadline: **Friday 2026-11-13** (Costa Rica time). Peer reviews of three other projects are also required to pass.
 
 ## In progress
 
-- Nothing. Waiting for David to review #6 and #5.
+- PR #31 waits for David's OK to merge (no CI yet).
 
 ## Next up
 
-1. David reviews the groomed #6 and #5.
-2. Implement #6 on branch `6-categories`, QA, merge.
-3. Implement #5 on branch `5-items`, QA, merge.
+1. David approves merging PR #31; the orchestrator merges it (closes #6).
+2. Implement #5 on branch `5-items`, QA, merge.
 4. PM grooms #7 (Daily dashboard).
 
 ## Decisions

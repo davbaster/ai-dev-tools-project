@@ -4,7 +4,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from backend import auth
+from backend import auth, categories
 from backend.config import get_deployment
 
 # Validated at import time so the backend refuses to start with a bad value.
@@ -17,12 +17,14 @@ FIELD_MESSAGES = {
         "punto, guion o guion bajo."
     ),
     "password": "La contraseña debe tener entre 8 y 128 caracteres.",
+    "name": "El nombre debe tener entre 1 y 50 caracteres.",
 }
 DEFAULT_FIELD_MESSAGE = "Dato inválido."
 
 # api/openapi.yaml is the contract, so FastAPI's generated docs are turned off.
 app = FastAPI(title="Para Luego API", docs_url=None, redoc_url=None, openapi_url=None)
 app.include_router(auth.router)
+app.include_router(categories.router)
 
 
 @app.exception_handler(RequestValidationError)

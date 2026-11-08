@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Categorías · Para Luego{% endblock %}
+{% block content %}
+<p><a href="/">Inicio</a></p>
+<h2>Categorías</h2>
+{% include "_errors.html" %}
+<form method="post" action="/categories">
+  <label>Nueva categoría
+    <input name="name" maxlength="50" required value="{{ name or '' }}">
+  </label>
+  <button type="submit">Agregar</button>
+</form>
+<ul class="categories">
+  {% for category in categories %}
+  <li>
+    <span class="name">{{ category.name }}</span>
+    <span class="count">({{ category.item_count }} items)</span>
+    <form method="post" action="/categories/{{ category.id }}/delete" class="inline">
+      <button type="submit">Borrar</button>
+    </form>
+  </li>
+  {% endfor %}
+</ul>
+{% endblock %}
