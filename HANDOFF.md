@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-08, by the orchestrator session (#10 groomed, waiting for David's review)
+**Last updated:** 2026-11-08, by the orchestrator session (#10 QA PASS, PR #37 waiting for David's OK to merge)
 
 ## Current state
 
@@ -23,18 +23,18 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 - #7 (Daily dashboard): groomed, approved by David, implemented on `7-daily`, **QA: PASS**, PR #34 merged into `main` with David's OK (no CI yet). #7 is closed, branch deleted. It adds contract operation `getDaily` (`GET /api/daily` → `Daily {date, items}`), `backend/daily.py` (pure `pick_daily` seeded with `user_id:date`, Costa Rica day at fixed UTC-6), the "Tu Daily" section on `/`; 93 tests + 51 integration tests. Follow-up #33 (reshuffle on demand) filed as `backlog`.
 - #8 (Share via WhatsApp and Copy): groomed, approved by David, implemented on `8-share`, **QA: PASS**, PR #35 merged into `main` with David's OK (no CI yet). #8 is closed, branch deleted. 106 tests + 51 integration tests. Frontend only, no backend or contract change: `frontend/share.py` builds the text (title, note if any, URL; URL once if the title is the URL) and the `wa.me` link; a shared partial puts both buttons on `/items` and on the Daily cards; one small vanilla script copies from an escaped attribute and shows "Copiado". No follow-ups filed. QA finding: WhatsApp's web page shows 4-byte emoji (🎵) as �; our link is valid UTF-8, nothing to fix on our side.
 - #9 (test suites): groomed, approved by David, implemented on `9-test-suites`, **QA: PASS**, PR #36 merged into `main` with David's OK (no CI yet). #9 is closed, branch deleted. Targets: `test-unit`, `test-frontend`, `test-contract`, and `test-integration` with a throwaway Postgres (own Compose project, port 5433 / `TEST_DB_PORT`, removed even on failure, `TEST_DATABASE_URL` override); `make test` runs all four (so it now needs Docker); one missing frontend flow test (login → save → list); `AGENTS.md` and testing-guidelines updated. `make test`: unit 46, frontend 57, contract 4, integration 51.
-- #10 (CI workflow): **groomed** by the PM (label `groomed`). `make security` (bandit on backend/frontend, medium+; pip-audit), `.github/workflows/ci.yml` (one job: `make install`, `lint`, `security`, `test`, `build`; on every PR and pushes to `main`/`prod`; no secrets; pinned actions; concurrency cancel), `make ci-local` with `act` (maybe a `TEST_DB_HOST` override), docs say PRs merge only with green CI + QA PASS. New dev dependencies `bandit`, `pip-audit` pending David's approval. Waiting for David's review.
+- #10 (CI workflow): groomed, approved by David (with `bandit` and `pip-audit`), implemented on `10-ci`, **QA: PASS** (label `qa-pass`), PR #37 open with CI green, **not merged** (waiting for David's OK). Pending check: CI green on the push to `main` after the merge. `make security` (bandit on backend/frontend, medium+; pip-audit), `.github/workflows/ci.yml` (one job: `make install`, `lint`, `security`, `test`, `build`; on every PR and pushes to `main`/`prod`; no secrets; pinned actions; concurrency cancel), `make ci-local` with `act` (`TEST_DB_HOST=host.docker.internal`), docs say PRs merge only with green CI + QA PASS. Red-path check: throwaway PR #38 failed at Lint, later steps skipped; closed and branch deleted.
 - `/` now calls `getMe` and then `getDaily`; frontend test fakes that serve `/` must answer `/api/daily`.
 - Deadline: **Friday 2026-11-13** (Costa Rica time). Peer reviews of three other projects are also required to pass.
 
 ## In progress
 
-- Nothing.
+- PR #37 (#10) waiting for David's OK to merge.
 
 ## Next up
 
-1. David reviews the groomed #10 (approving it approves `bandit` and `pip-audit` as dev dependencies).
-2. On approval: implement #10 on branch `10-ci`, run `make lint`, `make security`, `make test`, `make ci-local`, open the PR (CI runs on it), QA, post `## QA: PASS`/`FAIL`. Merge only with David's OK.
+1. With David's OK: merge PR #37, delete `10-ci`, confirm CI green on the push to `main` (record it on #10), re-run `make lint` and `make test` on `main`, close the decision "Merge PRs without CI until #10".
+2. Next backlog issue: #11 (Render blueprint and CD to dev). Decide the Neon fallback with David there.
 
 ## Decisions
 
@@ -91,7 +91,7 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 | 2026-11-08 | #7 Daily (approved by David): stable for the whole day, seeded with user id + local date; day changes at midnight Costa Rica (fixed UTC-6, no `zoneinfo`); computed per request, nothing stored | A Daily that changes on every refresh isn't a "Daily"; fixed offset avoids needing `tzdata` on Windows; no migration |
 | 2026-11-08 | #8 (approved by David): share text built in the frontend from the `Item` it already gets; format title / note / URL one per line; buttons on `/items` and the Daily; text in an escaped HTML attribute, read by one vanilla script | No API change needed; avoids user data inside `<script>`; plan section 3 and testing guidelines ask for both pages |
 | 2026-11-08 | #9 (approved by David): `make test` runs every suite including integration on a throwaway Postgres (port 5433); per-suite targets need no Docker | AGENTS.md and plan section 9 already promise it; CI (#10) calls the same targets; tests never touch dev data |
-| 2026-11-08 | #10 (proposed, pending David's review): CI is one job calling the make targets; runs on every PR and on pushes to `main`/`prod`; no branch protection on `main` (the responder pushes there) | Same commands locally and in CI; no duplicate runs; matches the on-call design |
+| 2026-11-08 | #10 (approved by David, with `bandit` and `pip-audit`): CI is one job calling the make targets; runs on every PR and on pushes to `main`/`prod`; no branch protection on `main` (the responder pushes there) | Same commands locally and in CI; no duplicate runs; matches the on-call design |
 | 2026-11-08 | Merge PRs without CI until #10 adds it, on local `make lint` + `make test` and David's OK | No CI exists yet; David approved for #21 |
 
 ## Open questions
