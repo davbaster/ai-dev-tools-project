@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-08, by the orchestrator session (#23 merged)
+**Last updated:** 2026-11-08, by the orchestrator session (#23 merged, #3 groomed)
 
 ## Current state
 
@@ -14,17 +14,19 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 - #1 (repo scaffold): groomed, approved by David (with `httpx`), implemented on `1-repo-scaffold`, **QA: PASS**, PR #21 merged into `main` by the orchestrator with David's OK (no CI yet). #1 is closed, branch deleted.
 - #2 (Docker Compose with app + Postgres): groomed, approved by David, implemented on `2-docker-compose`, **QA: PASS**, PR #22 merged into `main` with David's OK (no CI yet). #2 is closed, branch deleted.
 - #23 (split into frontend and backend with `api/openapi.yaml`): groomed, approved by David (with `httpx` runtime and `pyyaml` dev), implemented on `23-frontend-backend-split`, **QA: PASS**, PR #24 merged into `main` with David's OK (no CI yet). #23 is closed, branch deleted. Comments about the split posted on #3-#8, #11, #13, #18.
+- #3 (database models and Alembic migrations) is **groomed**: label `groomed`, "Groomed" comment posted. Waiting for David's review and approval of `sqlalchemy`, `alembic`, `psycopg[binary]`.
 - Code on `main`: `api/openapi.yaml` (`GET /api/health`), `backend/` (JSON API), `frontend/` (Jinja2 page + `httpx` client with an `OPERATIONS` table), 27 tests (unit, frontend, contract), Compose with `frontend` (8000) + `backend` (8001) + `db`. Makefile targets: `help`, `install`, `dev-backend`, `dev-frontend`, `lint`, `format`, `test`, `build`, `up`, `down`, `logs`.
 - Deadline: **Friday 2026-11-13** (Costa Rica time). Peer reviews of three other projects are also required to pass.
 
 ## In progress
 
-- Nothing.
+- Nothing. Waiting for David to review #3.
 
 ## Next up
 
-1. PM grooms #3 (database models and Alembic migrations, in `backend/`). It will need new dependencies (SQLAlchemy, Alembic, a Postgres driver), which David must approve.
-2. Implement, QA and merge #3 following `_docs/process.md`.
+1. David reviews the groomed #3 and approves `sqlalchemy`, `alembic` and `psycopg[binary]`.
+2. Implement #3 on branch `3-db-models-migrations`, QA, merge (no CI yet: local checks + David's OK).
+3. PM grooms #4 (registration, login, logout across frontend and backend).
 
 ## Decisions
 
@@ -62,6 +64,9 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 | 2026-11-08 | `httpx` runtime, `pyyaml` dev approved | David approved for #23 |
 | 2026-11-08 | Frontend Compose service sets `dns_opt: timeout:1, attempts:1` | Docker DNS took ~4 s to fail for a stopped backend and `httpx`'s timeout doesn't cover DNS |
 | 2026-11-08 | Frontend client lists its calls in an `OPERATIONS` table (operationId → method, path) | Lets the contract test check every call without generating code |
+| 2026-11-08 | #3 schema: categories unique per `(user_id, name)`; deleting a user cascades; deleting a category with items is refused; incident `status` limited to `open`/`resolved`/`needs_human`; timestamps `timestamptz` | Rules the later tasks rely on, enforced by the database |
+| 2026-11-08 | Backend runs migrations before serving in Compose; plain `postgresql://` URLs are switched to psycopg by the backend | `make up` stays one command; Compose and Render give plain URLs |
+| 2026-11-08 | Integration tests use a separate `para_luego_test` database (`TEST_DATABASE_URL`) on the Compose Postgres until #9 adds a disposable one | Tests must never wipe dev data |
 | 2026-11-08 | Merge PRs without CI until #10 adds it, on local `make lint` + `make test` and David's OK | No CI exists yet; David approved for #21 |
 
 ## Open questions
