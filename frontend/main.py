@@ -189,6 +189,118 @@ def delete_category(category_id: int, request: Request, backend: Backend):
     return redirect("/categories")
 
 
+def parse_id(value: str | None) -> int | None:
+    """A positive integer id from a form or query value, else None."""
+    value = (value or "").strip()
+    return int(value) if value.isdigit() else None
+
+
+def items_url(category_filter: int | None) -> str:
+    # Solo ids numéricos en la URL de redirección (nada del usuario sin validar).
+    if category_filter is None:
+        return "/items"
+    return f"/items?category_id={category_filter}"
+
+
+def items_page(
+    request: Request,
+    backend: BackendClient,
+    token: str,
+    category_filter: int | None,
+    status_code: int = 200,
+    errors: list[str] | None = None,
+    values: dict | None = None,
+):
+    categories = backend.list_categories(token)
+    if categories.status == 401:
+        return session_expired()
+    listed = backend.list_items(token, category_filter)
+    if listed.status == 401:
+        return session_expired()
+    items = listed.body if listed.ok else []
+    if not listed.ok:
+        # Filtro por una categoría que no existe o no es del usuario.
+        status_code = listed.status
+        errors = (errors or []) + error_messages(listed.body)
+    return render(
+        request,
+        "items.html",
+        status_code,
+        categories=categories.body,
+        items=items,
+        category_filter=category_filter,
+        errors=errors,
+        values=values or {},
+    )
+
+
+@app.get("/items", response_class=HTMLResponse)
+def list_items(request: Request, backend: Backend, category_id: str | None = None):
+    token = request.cookies.get(SESSION_COOKIE)
+    if not token:
+        return redirect("/login")
+    try:
+        return items_page(request, backend, token, parse_id(category_id))
+    except BackendUnavailable:
+        return unavailable_page(request)
+
+
+@app.post("/items", response_class=HTMLResponse)
+async def create_item(request: Request, backend: Backend):
+    token = request.cookies.get(SESSION_COOKIE)
+    if not token:
+        return redirect("/login")
+    form = await read_form(request)
+    category_filter = parse_id(form.get("filter"))
+    item = {
+        "url": form.get("url", ""),
+        "title": form.get("title", ""),
+        "category_id": parse_id(form.get("category_id")),
+        "note": form.get("note", ""),
+    }
+    try:
+        created = backend.create_item(token, item)
+        if created.status == 401:
+            return session_expired()
+        if created.status != 201:
+            return items_page(
+                request,
+                backend,
+                token,
+                category_filter,
+                created.status,
+                errors=error_messages(created.body),
+                values=item,
+            )
+    except BackendUnavailable:
+        return unavailable_page(request)
+    return redirect(items_url(category_filter))
+
+
+@app.post("/items/{item_id}/delete", response_class=HTMLResponse)
+async def delete_item(item_id: int, request: Request, backend: Backend):
+    token = request.cookies.get(SESSION_COOKIE)
+    if not token:
+        return redirect("/login")
+    category_filter = parse_id((await read_form(request)).get("filter"))
+    try:
+        deleted = backend.delete_item(token, item_id)
+        if deleted.status == 401:
+            return session_expired()
+        if deleted.status != 204:
+            return items_page(
+                request,
+                backend,
+                token,
+                category_filter,
+                deleted.status,
+                errors=error_messages(deleted.body),
+            )
+    except BackendUnavailable:
+        return unavailable_page(request)
+    return redirect(items_url(category_filter))
+
+
 @app.get("/login", response_class=HTMLResponse)
 def login_page(request: Request, backend: Backend):
     return render(request, "login.html", backend_status=backend_status(backend))

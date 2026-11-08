@@ -16,6 +16,9 @@ OPERATIONS: dict[str, tuple[str, str]] = {
     "listCategories": ("GET", "/api/categories"),
     "createCategory": ("POST", "/api/categories"),
     "deleteCategory": ("DELETE", "/api/categories/{category_id}"),
+    "listItems": ("GET", "/api/items"),
+    "createItem": ("POST", "/api/items"),
+    "deleteItem": ("DELETE", "/api/items/{item_id}"),
 }
 
 TIMEOUT_SECONDS = 2.0
@@ -47,12 +50,15 @@ class BackendClient:
         json: dict | None = None,
         token: str | None = None,
         path_params: dict | None = None,
+        params: dict | None = None,
     ) -> ApiResult:
         method, template = OPERATIONS[operation_id]
         path = template.format(**(path_params or {}))
         headers = {"Authorization": f"Bearer {token}"} if token else {}
         try:
-            response = self._client.request(method, path, json=json, headers=headers)
+            response = self._client.request(
+                method, path, json=json, headers=headers, params=params
+            )
         except httpx.HTTPError as error:
             raise BackendUnavailable(operation_id) from error
         if response.status_code >= 500:
@@ -90,3 +96,13 @@ class BackendClient:
         return self._call(
             "deleteCategory", token=token, path_params={"category_id": category_id}
         )
+
+    def list_items(self, token: str, category_id: int | None = None) -> ApiResult:
+        params = {"category_id": category_id} if category_id is not None else None
+        return self._call("listItems", token=token, params=params)
+
+    def create_item(self, token: str, item: dict) -> ApiResult:
+        return self._call("createItem", json=item, token=token)
+
+    def delete_item(self, token: str, item_id: int) -> ApiResult:
+        return self._call("deleteItem", token=token, path_params={"item_id": item_id})

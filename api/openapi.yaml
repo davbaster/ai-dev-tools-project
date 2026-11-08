@@ -4,7 +4,7 @@
 openapi: 3.1.0
 info:
   title: Para Luego API
-  version: 0.3.0
+  version: 0.4.0
   description: JSON API served by the backend and called by the frontend.
 paths:
   /api/health:
@@ -207,6 +207,100 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
 
+  /api/items:
+    get:
+      operationId: listItems
+      summary: The caller's items, newest first, optionally of one category.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: category_id
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The items.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Item"
+        "401":
+          description: Missing, unknown or expired token.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: The category doesn't exist or isn't the caller's.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      operationId: createItem
+      summary: Save an item. The key user journey.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ItemCreate"
+      responses:
+        "201":
+          description: Item saved.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Item"
+        "401":
+          description: Missing, unknown or expired token.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: >-
+            Invalid url, title or note, or a category that isn't the caller's
+            (field `category_id`, same answer for missing and foreign ids).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
+
+  /api/items/{item_id}:
+    delete:
+      operationId: deleteItem
+      summary: Delete one of the caller's items.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: item_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted.
+        "401":
+          description: Missing, unknown or expired token.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: No such item for this user (also for other users' ids).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
 components:
   securitySchemes:
     bearerAuth:
@@ -268,6 +362,45 @@ components:
           type: string
         user:
           $ref: "#/components/schemas/User"
+
+    Item:
+      type: object
+      required: [id, url, title, note, category_id, category_name, created_at]
+      properties:
+        id:
+          type: integer
+        url:
+          type: string
+        title:
+          type: string
+        note:
+          type: [string, "null"]
+        category_id:
+          type: integer
+        category_name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    ItemCreate:
+      type: object
+      required: [url, category_id]
+      properties:
+        url:
+          type: string
+          description: Trimmed; must start with http:// or https://.
+          maxLength: 2048
+        title:
+          type: [string, "null"]
+          description: Trimmed; empty or missing means the URL is used.
+          maxLength: 300
+        category_id:
+          type: integer
+        note:
+          type: [string, "null"]
+          description: Empty is stored as null.
+          maxLength: 1000
 
     Category:
       type: object
