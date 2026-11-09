@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-08, by the orchestrator session (#12 implemented, PR #44 waiting for CI)
+**Last updated:** 2026-11-08, by the orchestrator session (#12: PR #44 green CI + pre-merge QA PASS, waiting for David's OK)
 
 ## Current state
 
@@ -30,11 +30,11 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 
 ## In progress
 
-- #12 (prod deploy): approved by David, implemented on `12-prod-deploy`, **PR #44** (`Closes #12`), label `in-progress`. Adds `render.prod.yaml` (prod Blueprint on branch `prod`, Neon `DATABASE_URL` `sync: false`), `deploy-prod.yml` (after CI on `prod`: `promoted-sha` → `wait-image` → `retag ENV=prod` → `deploy-prod` → `wait-deploy ENV=prod`), `rollback.yml` + `make rollback`, `make promote-prod`, docs (`_docs/deploy.md` prod/rollback sections and David's one-time steps). `make lint`/`security`/`test` green (71/67/4/51). Waiting for CI on the PR, then pre-merge QA. Follow-ups: #42, #43.
+- #12 (prod deploy): approved by David, implemented on `12-prod-deploy`, **PR #44** (`Closes #12`), label `in-progress`. Adds `render.prod.yaml` (prod Blueprint on branch `prod`, Neon `DATABASE_URL` `sync: false`), `deploy-prod.yml` (after CI on `prod`: `promoted-sha` → `wait-image` → `retag ENV=prod` → `deploy-prod` → `wait-deploy ENV=prod`), `rollback.yml` + `make rollback`, `make promote-prod`, docs (`_docs/deploy.md` prod/rollback sections and David's one-time steps). `make lint`/`security`/`test` green (71/67/4/51). CI green on the PR; pre-merge `## QA: PASS` posted on #12 (live criteria pending). **Waiting for David's OK to merge.** Follow-ups: #42, #43.
 
 ## Next up
 
-1. CI green on PR #44 → QA of the static criteria → David's OK → merge. Merging changes nothing on Render (`render.yaml` is still dev-only).
+1. David's OK → merge PR #44 (CI green, pre-merge QA PASS). Merging changes nothing on Render (`render.yaml` is still dev-only).
 2. David's one-time steps from `_docs/deploy.md` → "One-time setup for prod": Neon, `prod` branch at `68de85a`, protect `prod`, `make promote-prod` + merge with a merge commit, prod Blueprint (`render.prod.yaml`, branch `prod`), prod hook secrets, re-run Deploy prod.
 3. Live QA on prod (David does the Chrome steps: wake-up, Copiar), then `## QA` on #12.
 
