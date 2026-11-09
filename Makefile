@@ -194,7 +194,7 @@ rollback: ## Redeploy an earlier image: make rollback ENV=<dev|prod> TAG=<full s
 promote-prod: ## Open the release PR from main to prod with gh (prints the open one if it exists)
 	@command -v gh >/dev/null 2>&1 || { echo "gh is not installed: https://cli.github.com"; exit 1; }
 	@gh auth status >/dev/null 2>&1 || { echo "gh is not logged in: run gh auth login"; exit 1; }
-	@git fetch -q origin main prod
+	@git fetch -q origin main prod 2>/dev/null || { echo "Could not fetch origin/main and origin/prod: does the prod branch exist? (_docs/deploy.md, one-time setup)"; exit 1; }
 	@open=$$(gh pr list --base prod --head main --state open --json url --jq '.[0].url'); \
 	if [ -n "$$open" ]; then echo "A release PR is already open: $$open"; exit 0; fi; \
 	if [ -z "$$(git rev-list origin/prod..origin/main)" ]; then echo "Nothing to promote: prod already has every commit of main"; exit 0; fi; \
