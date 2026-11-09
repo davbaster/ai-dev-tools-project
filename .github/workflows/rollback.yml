@@ -1,0 +1,54 @@
+# Rollback: redeploy an earlier image (a full commit SHA already on GHCR) to dev
+# or prod. Manual only. Moves :<env> to that image, calls that environment's
+# deploy hooks and waits for its health checks. Changes no branch: the next CD
+# or promotion deploys main again. Doesn't undo database migrations (#42).
+name: Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      env:
+        description: Environment
+        type: choice
+        options: [dev, prod]
+        required: true
+      tag:
+        description: Full commit SHA of the image to deploy
+        type: string
+        required: true
+
+permissions:
+  contents: read
+  packages: write
+
+# Shares the group with that environment's deploys, so they never overlap.
+concurrency:
+  group: ${{ inputs.env == 'prod' && 'deploy-prod' || 'cd-dev' }}
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    name: roll ${{ inputs.env }} back to ${{ inputs.tag }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: Image name
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      # Inputs go through env, never straight into the script.
+      # make rollback refuses a bad env, a bad SHA, a missing image or
+      # missing hook secrets before touching anything.
+      - name: Roll back
+        env:
+          ROLLBACK_ENV: ${{ inputs.env }}
+          ROLLBACK_TAG: ${{ inputs.tag }}
+          RENDER_DEV_BACKEND_DEPLOY_HOOK: ${{ secrets.RENDER_DEV_BACKEND_DEPLOY_HOOK }}
+          RENDER_DEV_FRONTEND_DEPLOY_HOOK: ${{ secrets.RENDER_DEV_FRONTEND_DEPLOY_HOOK }}
+          RENDER_PROD_BACKEND_DEPLOY_HOOK: ${{ secrets.RENDER_PROD_BACKEND_DEPLOY_HOOK }}
+          RENDER_PROD_FRONTEND_DEPLOY_HOOK: ${{ secrets.RENDER_PROD_FRONTEND_DEPLOY_HOOK }}
+        run: make rollback ENV="$ROLLBACK_ENV" TAG="$ROLLBACK_TAG" IMAGE="$IMAGE"
