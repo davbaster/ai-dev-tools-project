@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-08, by the orchestrator session (#12 groomed, waiting for David's review)
+**Last updated:** 2026-11-08, by the orchestrator session (#12 implemented, PR #44 waiting for CI)
 
 ## Current state
 
@@ -30,11 +30,13 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 
 ## In progress
 
-- #12 (prod deploy): **groomed** by the PM (label `groomed`), waiting for David's review before implementation. Proposal: prod in its own Blueprint `render.prod.yaml` linked to branch `prod` (services `para-luego-prod-backend`/`-frontend`, image `:prod`, `DATABASE_URL` from Neon with `sync: false`, same wake-up env as dev); `deploy-prod.yml` after CI on `prod` deploys the promoted `main` commit's image (second parent of the merge commit) without rebuilding, moving `:prod`; `rollback.yml` + `make rollback ENV TAG` (moves `:<env>`, calls hooks, waits); `make promote-prod` with `gh`. Follow-ups filed: #42 (rollback across migrations), #43 (dev database expiry).
+- #12 (prod deploy): approved by David, implemented on `12-prod-deploy`, **PR #44** (`Closes #12`), label `in-progress`. Adds `render.prod.yaml` (prod Blueprint on branch `prod`, Neon `DATABASE_URL` `sync: false`), `deploy-prod.yml` (after CI on `prod`: `promoted-sha` → `wait-image` → `retag ENV=prod` → `deploy-prod` → `wait-deploy ENV=prod`), `rollback.yml` + `make rollback`, `make promote-prod`, docs (`_docs/deploy.md` prod/rollback sections and David's one-time steps). `make lint`/`security`/`test` green (71/67/4/51). Waiting for CI on the PR, then pre-merge QA. Follow-ups: #42, #43.
 
 ## Next up
 
-1. David reviews groomed #12 (especially the separate `render.prod.yaml` on branch `prod`). On approval: engineer on branch `12-prod-deploy`, `make lint`/`security`/`test`, PR, green CI, QA, merge only with David's OK. Then David's one-time steps (Neon, `prod` branch from a commit before the PR, branch protection, prod Blueprint, prod hook secrets) and the live QA.
+1. CI green on PR #44 → QA of the static criteria → David's OK → merge. Merging changes nothing on Render (`render.yaml` is still dev-only).
+2. David's one-time steps from `_docs/deploy.md` → "One-time setup for prod": Neon, `prod` branch at `68de85a`, protect `prod`, `make promote-prod` + merge with a merge commit, prod Blueprint (`render.prod.yaml`, branch `prod`), prod hook secrets, re-run Deploy prod.
+3. Live QA on prod (David does the Chrome steps: wake-up, Copiar), then `## QA` on #12.
 
 ## Decisions
 
@@ -92,7 +94,7 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 | 2026-11-08 | #8 (approved by David): share text built in the frontend from the `Item` it already gets; format title / note / URL one per line; buttons on `/items` and the Daily; text in an escaped HTML attribute, read by one vanilla script | No API change needed; avoids user data inside `<script>`; plan section 3 and testing guidelines ask for both pages |
 | 2026-11-08 | #9 (approved by David): `make test` runs every suite including integration on a throwaway Postgres (port 5433); per-suite targets need no Docker | AGENTS.md and plan section 9 already promise it; CI (#10) calls the same targets; tests never touch dev data |
 | 2026-11-08 | #10 (approved by David, with `bandit` and `pip-audit`): CI is one job calling the make targets; runs on every PR and on pushes to `main`/`prod`; no branch protection on `main` (the responder pushes there) | Same commands locally and in CI; no duplicate runs; matches the on-call design |
-| 2026-11-08 | #12 proposal (pending David): prod in its own Blueprint `render.prod.yaml` on branch `prod`; deploy-prod deploys the promoted `main` image (no rebuild) and moves `:prod` | Render's `imgURL` affects only one deploy and later deploys use the stored tag; a Blueprint on `main` would change prod on every merge to `main` and syncs ignore `sync: false` |
+| 2026-11-08 | #12 (approved by David): prod in its own Blueprint `render.prod.yaml` on branch `prod`; deploy-prod deploys the promoted `main` image (no rebuild) and moves `:prod` | Render's `imgURL` affects only one deploy and later deploys use the stored tag; a Blueprint on `main` would change prod on every merge to `main` and syncs ignore `sync: false` |
 | 2026-11-08 | #11: the browser wakes the sleeping Render backend (`BACKEND_PUBLIC_URL`); server-side retries only 5 s | Render's logs showed calls from the frontend service never wake a free backend; only internet traffic does |
 | 2026-11-08 | ~~Merge PRs without CI until #10~~ Closed: since #10 (merged), PRs merge only with green CI + QA PASS + David's OK | CI exists now (`.github/workflows/ci.yml`) |
 
