@@ -41,7 +41,7 @@ Interesting things (links, YouTube or social videos, photos, books, movies, prod
 | Storage/UI | Prometheus (metrics), Tempo (traces), Loki (logs), Grafana (dashboards + alerts) |
 | On-call | Responder agent (Python) + MCP server (`mcp` SDK); LLM via any OpenAI-compatible API (default model `gpt-6-luna`) |
 | CI/CD | GitHub Actions; `act` for local runs |
-| Hosting | Render (dev + prod web services, Postgres); Neon as fallback database |
+| Hosting | Render (dev + prod web services, dev Postgres); Neon free for the prod database |
 
 ## 5. Architecture
 
@@ -111,8 +111,8 @@ Demo bug: a feature-flagged defect (for example `BUG_SAVE_ITEM=1` makes backend 
 |---|---|---|
 | `ci.yml` | every PR and push | lint, security (bandit, pip-audit), unit + frontend + integration tests, Docker build |
 | `cd-dev.yml` | push to `main` after CI | build and push image tagged with the commit SHA, deploy to Render **dev** via deploy hook |
-| `deploy-prod.yml` | push to `prod` (a human merged the PR from `main`) | deploy to Render **prod** |
-| `rollback.yml` | manual (inputs `env`, `tag`) | redeploy a previous tag |
+| `deploy-prod.yml` | push to `prod` (a human merged the PR from `main`) after CI | deploy the image dev ran for the promoted `main` commit to Render **prod** (no rebuild) |
+| `rollback.yml` | manual (inputs `env`, `tag`) | redeploy a previous image tag to dev or prod |
 
 All workflows run locally with `make ci-local` (act), and in anyone's fork with their own secrets.
 

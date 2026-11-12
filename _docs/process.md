@@ -26,7 +26,7 @@ Create these labels once in the repo.
 7. **Merge** - only on QA PASS **and** a green CI check on the PR (`.github/workflows/ci.yml`: `make install`, `lint`, `security`, `test`, `build`), the orchestrator merges the PR with David's OK. A red or still-running CI blocks the merge. The issue closes. CD deploys `main` to **dev**. To reproduce CI on your machine before pushing, run `make ci-local` (`act` + Docker).
 8. **Record** - the orchestrator appends to `_docs/log/YYYY-MM-DD.md` and overwrites `HANDOFF.md`.
 
-Production is never automatic: to release, open a PR from `main` to `prod` (`make promote-prod`). David reviews and merges it; merging deploys to **prod**.
+Production is never automatic: to release, open a PR from `main` to `prod` (`make promote-prod`). David reviews and merges it with **Create a merge commit**; after CI passes on `prod`, the **Deploy prod** workflow deploys the image dev ran for that `main` commit. See `_docs/deploy.md`.
 
 ## Incidents
 
@@ -39,7 +39,7 @@ Production is never automatic: to release, open a PR from `main` to `prod` (`mak
 
 ## Rollback
 
-If a deploy makes things worse, redeploy the previous image tag: `make rollback ENV=<dev|prod> TAG=<tag>` or the **Rollback** workflow. Record it in the log.
+If a deploy makes things worse, redeploy the previous image tag: `make rollback ENV=<dev|prod> TAG=<tag>` or the **Rollback** workflow. A rollback changes no branch (the next deploy brings `main` back) and doesn't undo migrations (#42). Record it in the log.
 
 ## Rules of the road
 

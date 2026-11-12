@@ -1,0 +1,51 @@
+# Render Blueprint: the prod environment (#12). Dev is render.yaml.
+# This Blueprint is linked to the `prod` branch, so prod's services and config
+# change only when David merges a PR from main to prod, never on a merge to main.
+# Same free-plan facts as dev (see render.yaml and _docs/deploy.md). The
+# database is on Neon's free tier (Render allows one free Postgres and dev uses
+# it): DATABASE_URL is asked for when the Blueprint is created, never stored here.
+# deploy-prod.yml deploys the promoted commit's image with the deploy hooks and
+# moves the :prod tag to it, so later Render deploys use the same image.
+
+services:
+  - type: web
+    name: para-luego-prod-backend
+    runtime: image
+    image:
+      url: ghcr.io/davbaster/ai-dev-tools-project:prod
+    plan: free
+    region: virginia
+    dockerCommand: sh /app/backend/start.sh
+    healthCheckPath: /api/health
+    envVars:
+      - key: DEPLOYMENT
+        value: prod
+      - key: PORT
+        value: "8001"
+      # Neon's direct (not -pooler) connection string, with sslmode=require.
+      - key: DATABASE_URL
+        sync: false
+
+  - type: web
+    name: para-luego-prod-frontend
+    runtime: image
+    image:
+      url: ghcr.io/davbaster/ai-dev-tools-project:prod
+    plan: free
+    region: virginia
+    dockerCommand: uvicorn frontend.main:app --host 0.0.0.0 --port 8000
+    healthCheckPath: /health
+    envVars:
+      - key: DEPLOYMENT
+        value: prod
+      - key: PORT
+        value: "8000"
+      - key: BACKEND_URL
+        value: https://para-luego-prod-backend.onrender.com
+      # Same wake-up setup as dev (#11): the user's browser wakes the backend.
+      - key: BACKEND_TIMEOUT_SECONDS
+        value: "60"
+      - key: BACKEND_WAKE_SECONDS
+        value: "5"
+      - key: BACKEND_PUBLIC_URL
+        value: https://para-luego-prod-backend.onrender.com
