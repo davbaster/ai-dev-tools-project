@@ -3,11 +3,13 @@
 `POST /api/items` is the key user journey. Never log an item's URL, title or note.
 """
 
+import logging
 from datetime import datetime
 from typing import Annotated
 from urllib.parse import urlparse
 
 from fastapi import APIRouter, HTTPException, Response, status
+from opentelemetry import metrics, trace
 from pydantic import BaseModel, StringConstraints, field_validator
 from sqlalchemy import select
 
@@ -20,6 +22,12 @@ CATEGORY_NOT_FOUND = "No existe esa categoría."
 ITEM_NOT_FOUND = "No existe ese item."
 
 router = APIRouter(prefix="/api")
+
+# Solo ids en spans, métricas y logs (#13).
+log = logging.getLogger("backend.items")
+items_saved = metrics.get_meter("para_luego.backend").create_counter(
+    "items.saved", unit="{item}", description="Items saved"
+)
 
 Title = Annotated[str, StringConstraints(strip_whitespace=True, max_length=300)]
 Note = Annotated[str, StringConstraints(strip_whitespace=True, max_length=1000)]
@@ -77,6 +85,8 @@ def item_out(item: Item, category_name: str) -> ItemOut:
 
 @router.post("/items", status_code=status.HTTP_201_CREATED)
 def create_item(body: ItemCreate, token: CurrentToken, db: DB) -> ItemOut:
+    span = trace.get_current_span()
+    span.set_attributes({"user_id": token.user_id, "category_id": body.category_id})
     category = own_category(db, token.user_id, body.category_id)
     if category is None:
         # Misma respuesta para una categoría inexistente o ajena.
@@ -94,6 +104,18 @@ def create_item(body: ItemCreate, token: CurrentToken, db: DB) -> ItemOut:
     db.add(item)
     db.commit()
     db.refresh(item)
+    span.set_attribute("item_id", item.id)
+    items_saved.add(1)
+    log.info(
+        "item saved",
+        extra={
+            "fields": {
+                "user_id": token.user_id,
+                "item_id": item.id,
+                "category_id": item.category_id,
+            }
+        },
+    )
     return item_out(item, category.name)
 
 

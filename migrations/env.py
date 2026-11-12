@@ -1,17 +1,22 @@
 """Alembic environment. Reads DATABASE_URL from the environment, never from alembic.ini."""
 
-from logging.config import fileConfig
+import os
 
 from alembic import context
 
+import telemetry
 from backend.config import get_database_url
 from backend.db import create_db_engine
 from backend.models import Base
 
 config = context.config
 
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+# Logs de las migraciones en JSON, como el resto del backend (#13).
+telemetry.setup_logging(
+    "para-luego-backend",
+    os.environ.get("DEPLOYMENT", "local"),
+    os.environ.get("APP_VERSION", "").strip() or "local",
+)
 
 target_metadata = Base.metadata
 

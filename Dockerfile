@@ -21,6 +21,7 @@ RUN uv sync --locked --no-dev
 
 COPY backend ./backend
 COPY frontend ./frontend
+COPY telemetry ./telemetry
 COPY alembic.ini ./
 COPY migrations ./migrations
 

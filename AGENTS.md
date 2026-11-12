@@ -42,6 +42,7 @@ It is a course final project and a **proof of concept**: keep everything simple,
 | `backend/` | Backend service: FastAPI JSON API under `/api/...`, SQLAlchemy models, auth tokens, status-code counts, error routes, telemetry setup. The only code that touches Postgres. |
 | `frontend/` | Frontend service: FastAPI + Jinja2 pages (including the admin panel), API client for the backend, session cookie, telemetry setup. |
 | `frontend/templates/` | Server-rendered HTML pages. |
+| `telemetry/` | OpenTelemetry and JSON logging shared by both services (imports nothing from either): `setup()` per app, request metrics by route template, access log. |
 | `migrations/` | Alembic migrations (backend). |
 | `tests/unit/` | Fast tests, no database or network. |
 | `tests/integration/` | Tests against a real Postgres (Docker). |
@@ -66,7 +67,7 @@ The root `Makefile` is the single entry point, and CI calls the same targets. Pl
 - `make up` / `make down` - start / stop the full local system (frontend, backend, Postgres, observability stack, on-call agent, MCP server)
 - `make logs` - follow the frontend and backend logs
 - `make lint` - ruff (lint + format check)
-- `make security` - bandit (backend + frontend, medium severity and above) + pip-audit (installed dependencies); an ignored finding goes in `PIP_AUDIT_IGNORE` with its ID and the reason
+- `make security` - bandit (backend, frontend and telemetry, medium severity and above) + pip-audit (installed dependencies); an ignored finding goes in `PIP_AUDIT_IGNORE` with its ID and the reason
 - `make test` - every suite in order (`test-unit`, `test-frontend`, `test-contract`, `test-integration`), stopping at the first failure; needs Docker
 - `make test-unit` / `make test-frontend` / `make test-contract` - one suite, no Docker needed
 - `make test-integration` - starts a throwaway Postgres (`docker-compose.test.yml`, port 5433, override with `TEST_DB_PORT=<port>`), runs the integration tests and removes it, even when they fail. `TEST_DATABASE_URL=<url>` uses that database instead (never the dev `para_luego` one)
