@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-12, by the orchestrator session (#13 groomed, waiting for David's review and dependency OK)
+**Last updated:** 2026-11-12, by the orchestrator session (#13: PR #47 green CI + pre-merge QA PASS, waiting for David's OK)
 
 ## Current state
 
@@ -31,12 +31,14 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 
 ## In progress
 
-- #13 (OpenTelemetry + JSON logs): **groomed** by the PM (label `groomed`), waiting for David's review and his OK on the new runtime dependencies: `opentelemetry-api`, `-sdk`, `-exporter-otlp-proto-http`, `-instrumentation-fastapi`, `-instrumentation-httpx`, `-instrumentation-sqlalchemy`. Design: one trace frontend → backend → DB (W3C `traceparent`), metrics `http.requests` / `http.server.request.duration` by route template (`unmatched` for 404s) and `items.saved`; JSON logs with `trace_id`/`span_id` for every line (uvicorn and Alembic included), own access log instead of uvicorn's; export only when `OTEL_EXPORTER_OTLP_ENDPOINT` is set (not on Render); tests check no customer data.
+- #13 (OpenTelemetry + JSON logs): approved by David with the six OpenTelemetry dependencies. Implemented on `13-otel`, **PR #47**, CI green, pre-merge `## QA: PASS` on #13. **Waiting for David's OK to merge.** The commit says `Closes #13` (an amend to `Refs` needed a force push, which was blocked): if the merge closes #13, reopen it until the dev check passes.
+- What it adds: shared `telemetry/` (JSON logs with trace ids for every line, own access log by route template, `http.requests` / `http.server.request.duration` metrics with `unmatched` for 404s, FastAPI spans without health, OTLP/HTTP export only with `OTEL_EXPORTER_OTLP_ENDPOINT`), httpx client spans + `traceparent`, backend DB spans with `EngineTracer`, `items.saved`. `tests/conftest.py` installs in-memory providers for every suite.
 
 ## Next up
 
-1. David reviews #13 and approves (or not) the dependencies. Then engineer on branch `13-otel`, `make lint`/`security`/`test`, PR, green CI, QA (local `make logs` same `trace_id`; dev logs JSON), merge only with David's OK.
-2. #14 (observability stack) after #13. #43 before 2026-12-08.
+1. David's OK → merge PR #47 → CI and CD dev → dev live check (Render logs JSON with trace ids; save, Daily, share, wake-up still work) → final `## QA` on #13.
+2. #14 (observability stack in Compose: collector, Prometheus, Tempo, Loki, Grafana) sets `OTEL_EXPORTER_OTLP_ENDPOINT` in Compose and ships stdout logs to Loki.
+3. #43 before 2026-12-08.
 - Deadline Friday 2026-11-13 (Costa Rica). Don't push to `main` while waiting for services to sleep.
 
 ## Decisions
@@ -95,6 +97,10 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 | 2026-11-08 | #8 (approved by David): share text built in the frontend from the `Item` it already gets; format title / note / URL one per line; buttons on `/items` and the Daily; text in an escaped HTML attribute, read by one vanilla script | No API change needed; avoids user data inside `<script>`; plan section 3 and testing guidelines ask for both pages |
 | 2026-11-08 | #9 (approved by David): `make test` runs every suite including integration on a throwaway Postgres (port 5433); per-suite targets need no Docker | AGENTS.md and plan section 9 already promise it; CI (#10) calls the same targets; tests never touch dev data |
 | 2026-11-08 | #10 (approved by David, with `bandit` and `pip-audit`): CI is one job calling the make targets; runs on every PR and on pushes to `main`/`prod`; no branch protection on `main` (the responder pushes there) | Same commands locally and in CI; no duplicate runs; matches the on-call design |
+| 2026-11-12 | OpenTelemetry api, sdk, exporter-otlp-proto-http, instrumentation fastapi/httpx/sqlalchemy approved | David approved for #13 |
+| 2026-11-12 | Telemetry setup in a shared top-level `telemetry/` package (copied by the Dockerfile) | Same code for both services without the frontend importing `backend/` |
+| 2026-11-12 | DB spans with the SQLAlchemy package's `EngineTracer` per engine, not `SQLAlchemyInstrumentor().instrument()` | The instrumentor declares support only below SQLAlchemy 2.1 and its global patch imports asyncio, which needs `greenlet` |
+| 2026-11-12 | Own request metrics and access log (route template, `unmatched` for 404s); the instrumentations' HTTP metrics and uvicorn's access log off; `httpx` logger at WARNING | Raw paths, client IPs and full URLs must never reach telemetry |
 | 2026-11-11 | `main` stays unprotected; `prod` requires a PR (0 approvals) and the CI check | The responder pushes fixes straight to `main`; David merges his own release PRs |
 | 2026-11-08 | #12 (approved by David): prod in its own Blueprint `render.prod.yaml` on branch `prod`; deploy-prod deploys the promoted `main` image (no rebuild) and moves `:prod` | Render's `imgURL` affects only one deploy and later deploys use the stored tag; a Blueprint on `main` would change prod on every merge to `main` and syncs ignore `sync: false` |
 | 2026-11-08 | #11: the browser wakes the sleeping Render backend (`BACKEND_PUBLIC_URL`); server-side retries only 5 s | Render's logs showed calls from the frontend service never wake a free backend; only internet traffic does |
