@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-11, by the orchestrator session (#12: prod live, waiting for David's Chrome checks)
+**Last updated:** 2026-11-11, by the orchestrator session (#12 closed: prod live on Render + Neon)
 
 ## Current state
 
@@ -25,20 +25,19 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 - #9 (test suites): groomed, approved by David, implemented on `9-test-suites`, **QA: PASS**, PR #36 merged into `main` with David's OK (no CI yet). #9 is closed, branch deleted. Targets: `test-unit`, `test-frontend`, `test-contract`, and `test-integration` with a throwaway Postgres (own Compose project, port 5433 / `TEST_DB_PORT`, removed even on failure, `TEST_DATABASE_URL` override); `make test` runs all four (so it now needs Docker); one missing frontend flow test (login → save → list); `AGENTS.md` and testing-guidelines updated. `make test`: unit 46, frontend 57, contract 4, integration 51.
 - #10 (CI workflow): groomed, approved by David (with `bandit` and `pip-audit`), implemented on `10-ci`, **QA: PASS**, PR #37 merged into `main` with David's OK and green CI. #10 is closed, branch deleted. CI on the push to `main` green (run 42515414360). `make security` (bandit on backend/frontend, medium+; pip-audit), `.github/workflows/ci.yml` (one job: `make install`, `lint`, `security`, `test`, `build`; on every PR and pushes to `main`/`prod`; no secrets; pinned actions; concurrency cancel), `make ci-local` with `act` (`TEST_DB_HOST=host.docker.internal`), docs say PRs merge only with green CI + QA PASS. Red-path check: throwaway PR #38 failed at Lint, later steps skipped; closed and branch deleted.
 - #11 (Render + CD to dev): approved by David (dev on Render's free Postgres, prod on Neon in #12), PRs #39 (blueprint + CD), #40 (frontend retries) and #41 (the browser wakes the backend) merged with green CI and David's OK. **QA: PASS**, #11 closed. Dev: frontend https://para-luego-dev-frontend.onrender.com, backend https://para-luego-dev-backend.onrender.com; every green push to `main` deploys there (`cd-dev.yml`). Free-plan lesson: calls from one Render service never wake a sleeping free service, so the browser wakes the backend (`BACKEND_PUBLIC_URL`, `_wake.html`). See `_docs/deploy.md`. **Dev database expires 2026-12-08.**
+- #12 (prod deploy, rollback, promote-prod): approved by David, PRs #44 and #45 merged with green CI and David's OK; first release PR #46 merged by David. **QA: PASS**, #12 closed. **Prod:** frontend https://para-luego-prod-frontend.onrender.com, backend https://para-luego-prod-backend.onrender.com, database on Neon free; Blueprint `render.prod.yaml` on branch `prod`. Release: `make promote-prod` → David merges with **Create a merge commit** → Deploy prod deploys the image dev ran. Rollback: the Rollback workflow or `make rollback ENV TAG`. `prod` is protected (PR + CI check); `main` isn't. QA test users: `qa12proda2d876` (prod), `qa12deva2d876` (dev). Follow-ups #42 (rollback across migrations), #43 (dev database expiry).
 - `/` now calls `getMe` and then `getDaily`; frontend test fakes that serve `/` must answer `/api/daily`.
 - Deadline: **Friday 2026-11-13** (Costa Rica time). Peer reviews of three other projects are also required to pass.
 
 ## In progress
 
-- #12 (prod deploy): **prod is live.** Frontend https://para-luego-prod-frontend.onrender.com, backend https://para-luego-prod-backend.onrender.com, database on Neon (free). Both report `f2d04c4`, `deployment: prod`. Every live criterion passed except David's Chrome steps (progress comments on #12): Deploy prod end to end, HTTPS flow, dev/prod separation, rollback with a made-up SHA refused, rollback to `4527e3e` and roll forward to `f2d04c4`, second `promote-prod` prints the open PR.
-- `prod` rule: PR required (0 approvals), required check `lint, security, tests, build`, no force push or deletion. `main` unprotected.
-- QA test users left in the databases: `qa12proda2d876` (prod), `qa12deva2d876` (dev).
+- Nothing.
 
 ## Next up
 
-1. David in Chrome: after ~16 minutes without prod traffic (last request 04:05 UTC = 22:05 Costa Rica), open https://para-luego-prod-frontend.onrender.com: Render's wake page, then "Despertando el servicio…", then login works; save an item and press Copiar. Don't open prod (or let anything call it) before that.
-2. Orchestrator: final `## QA: PASS` on #12, label `qa-pass`, close #12.
-3. Then the next groomed/backlog issue per `_docs/process.md` (lowest number: #13). Deadline Friday 2026-11-13.
+1. Pick the next issue per `_docs/process.md`: lowest-numbered open issue is #13 (OpenTelemetry instrumentation + structured logs); it needs PM grooming first. Remaining seed issues: #13-#20; follow-ups #26, #28-#30, #33, #42, #43.
+2. #43 before 2026-12-08 (dev database expires).
+- Deadline Friday 2026-11-13 (Costa Rica). Don't push to `main` while waiting for services to sleep.
 
 ## Decisions
 
