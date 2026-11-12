@@ -74,7 +74,8 @@ Render runs the frontend, the backend and Postgres. The admin panel acts as a mi
 ## 6. Observability
 
 - **Key user journey:** *save an item* (frontend form → backend `POST /api/items`) - instrumented end to end across both services, one trace: frontend HTTP span, frontend → backend client span, backend HTTP span, DB span, a `items_saved_total` counter, a request-duration histogram, and structured JSON logs that carry the same `trace_id`.
-- Every request: `http_requests_total{route, method, status}` with the **route template**, never the raw path.
+- Every request (both services): counter `http.requests` (Prometheus `http_requests_total`) and histogram `http.server.request.duration` in seconds, attributes `route` (the **route template**, never the raw path; `unmatched` for 404s), `method`, `status`. Backend counter `items.saved` (`items_saved_total`). Health checks are counted but make no spans or access lines.
+- Setup lives in `telemetry/` (#13). Export over OTLP/HTTP only when `OTEL_EXPORTER_OTLP_ENDPOINT` is set (locally, #14); Render exports nothing but still logs JSON with trace ids.
 - **No customer data in telemetry:** no usernames, URLs, titles or notes; only ids.
 - Logs are JSON to stdout; the collector ships them to Loki. Grafana links a log line to its trace in Tempo by `trace_id`.
 

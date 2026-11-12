@@ -8,6 +8,12 @@ dependencies = [
     "fastapi",
     "httpx",
     "jinja2",
+    "opentelemetry-api>=1.45.2",
+    "opentelemetry-exporter-otlp-proto-http>=1.45.2",
+    "opentelemetry-instrumentation-fastapi>=0.66b2",
+    "opentelemetry-instrumentation-httpx>=0.66b2",
+    "opentelemetry-instrumentation-sqlalchemy>=0.66b2",
+    "opentelemetry-sdk>=1.45.2",
     "psycopg[binary]>=3.3.8",
     "sqlalchemy>=2.1.8",
     "uvicorn[standard]",
@@ -30,6 +36,9 @@ target-version = "py312"
 
 [tool.ruff.lint]
 extend-select = ["I"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["backend", "frontend", "telemetry"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

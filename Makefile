@@ -29,7 +29,7 @@ format: ## Format and auto-fix with ruff
 PIP_AUDIT_IGNORE =
 
 security: ## Scan the code with bandit (medium+) and the installed dependencies with pip-audit
-	uv run bandit -r backend frontend -ll -q
+	uv run bandit -r backend frontend telemetry -ll -q
 	uv run pip-audit --skip-editable --progress-spinner off $(PIP_AUDIT_IGNORE)
 
 test: test-unit test-frontend test-contract test-integration ## Run every suite, in order; stops at the first failing one (needs Docker)

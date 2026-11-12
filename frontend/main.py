@@ -8,6 +8,7 @@ from fastapi import Depends, FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 
+import telemetry
 from frontend.api_client import BackendClient, BackendUnavailable
 from frontend.config import (
     get_backend_public_url,
@@ -38,6 +39,8 @@ templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
 templates.env.globals.update(share_text=share_text, whatsapp_url=whatsapp_url)
 
 app = FastAPI(title="Para Luego", docs_url=None, redoc_url=None, openapi_url=None)
+# JSON logs, spans and request metrics (#13), before the routes are used.
+telemetry.setup(app, "para-luego-frontend", DEPLOYMENT, VERSION)
 
 
 def get_backend_client() -> BackendClient:

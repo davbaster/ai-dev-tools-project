@@ -4,6 +4,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+import telemetry
 from backend import auth, categories, daily, items
 from backend.config import get_deployment, get_version
 
@@ -28,6 +29,8 @@ DEFAULT_FIELD_MESSAGE = "Dato inválido."
 
 # api/openapi.yaml is the contract, so FastAPI's generated docs are turned off.
 app = FastAPI(title="Para Luego API", docs_url=None, redoc_url=None, openapi_url=None)
+# JSON logs, spans and request metrics (#13), before the routes are used.
+telemetry.setup(app, "para-luego-backend", DEPLOYMENT, VERSION)
 app.include_router(auth.router)
 app.include_router(categories.router)
 app.include_router(items.router)

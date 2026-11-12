@@ -7,6 +7,9 @@ from dataclasses import dataclass
 from typing import Any
 
 import httpx
+from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
+
+import telemetry
 
 # Every operation the frontend calls, by operationId. The contract tests check
 # that each one exists in api/openapi.yaml with the same method and path.
@@ -59,6 +62,10 @@ class BackendClient:
         self._client = httpx.Client(
             base_url=base_url, timeout=timeout, transport=transport
         )
+        # Span de cliente y header traceparent hacia el backend: una sola traza (#13).
+        HTTPXClientInstrumentor.instrument_client(
+            self._client, meter_provider=telemetry.no_metrics()
+        )
         # Render despierta un backend gratis dormido en ~30-60 s y mientras tanto
         # su proxy responde errores al instante. Durante wake_seconds se reintenta.
         self._wake_seconds = wake_seconds
@@ -94,6 +101,13 @@ class BackendClient:
                         operation_id,
                         error.args[0],
                         attempts,
+                        extra={
+                            "fields": {
+                                "operation": operation_id,
+                                "reason": error.args[0],
+                                "attempts": attempts,
+                            }
+                        },
                     )
                     raise BackendUnavailable(operation_id) from error.__cause__
                 self._sleep(WAKE_RETRY_PAUSE_SECONDS)
