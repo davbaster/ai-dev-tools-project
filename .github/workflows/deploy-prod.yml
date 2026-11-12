@@ -1,0 +1,86 @@
+# Deploy prod: after CI passes on a push to prod (David merged the PR from
+# main), deploy the image dev already ran for the promoted main commit, without
+# rebuilding it. Moves :prod to that image, calls the prod deploy hooks and
+# waits until both prod services report the commit SHA. Logic lives in the
+# Makefile. workflow_run uses this file from main, whatever prod contains.
+name: Deploy prod
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [prod]
+
+permissions:
+  contents: read
+  packages: write
+
+# Two prod deploys never overlap, and one never cancels another.
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: deploy the promoted image to prod
+    # Only a green CI run from a push to prod (never a PR) deploys.
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      # Full history: promoted-sha checks that the commit belongs to main.
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
+      - name: Image name
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+
+      # The merge commit's second parent (main's head), or the head itself
+      # after a fast-forward. Squash or rebase merges stop here.
+      - name: Find the promoted main commit
+        env:
+          REF: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          tag=$(make -s promoted-sha REF="$REF")
+          echo "Promoted main commit: $tag"
+          echo "TAG=$tag" >> "$GITHUB_ENV"
+
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      # CD dev pushes :<sha> after CI on main; wait for it if it is still running.
+      - name: Wait for the image
+        run: make wait-image TAG="$TAG" IMAGE="$IMAGE"
+
+      # Later Render deploys of prod (manual, config sync) use :prod.
+      - name: Move :prod to the image
+        run: make retag ENV=prod TAG="$TAG" IMAGE="$IMAGE"
+
+      # Forks or repos without the Render secrets skip the deploy, without failing.
+      - name: Check deploy hooks
+        id: hooks
+        env:
+          BACKEND_HOOK: ${{ secrets.RENDER_PROD_BACKEND_DEPLOY_HOOK }}
+          FRONTEND_HOOK: ${{ secrets.RENDER_PROD_FRONTEND_DEPLOY_HOOK }}
+        run: |
+          if [ -n "$BACKEND_HOOK" ] && [ -n "$FRONTEND_HOOK" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Render prod deploy hook secrets are not set; skipping the deploy to prod."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy to Render prod
+        if: steps.hooks.outputs.ready == 'true'
+        env:
+          RENDER_PROD_BACKEND_DEPLOY_HOOK: ${{ secrets.RENDER_PROD_BACKEND_DEPLOY_HOOK }}
+          RENDER_PROD_FRONTEND_DEPLOY_HOOK: ${{ secrets.RENDER_PROD_FRONTEND_DEPLOY_HOOK }}
+        run: make deploy-prod TAG="$TAG" IMAGE="$IMAGE"
+
+      - name: Wait until prod reports this commit
+        if: steps.hooks.outputs.ready == 'true'
+        run: make wait-deploy ENV=prod TAG="$TAG"

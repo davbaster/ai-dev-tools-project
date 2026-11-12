@@ -1,4 +1,5 @@
-# Render Blueprint: the dev environment (prod comes in #12).
+# Render Blueprint: the dev environment. Prod is render.prod.yaml (#12),
+# a separate Blueprint linked to the `prod` branch.
 # Free plan facts this follows (checked 2026-11-08, see #11):
 # - free web services can't receive private-network traffic, so the frontend
 #   calls the backend through its public URL;
