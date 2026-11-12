@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-11, by the orchestrator session (#12: first release merged, `:prod` exists; waiting for Neon + prod Blueprint + hook secrets)
+**Last updated:** 2026-11-11, by the orchestrator session (#12: prod live, waiting for David's Chrome checks)
 
 ## Current state
 
@@ -30,16 +30,15 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 
 ## In progress
 
-- #12 (prod deploy, issue open for the live QA): PRs #44 and #45 merged into `main` (dev reports `4527e3e`; `main` has since moved to `f2d04c4`, docs only).
-- `prod` branch: rule with PR required (0 approvals), required check `lint, security, tests, build`, no force push or deletion. `main` unprotected (the responder pushes there).
-- **First release done:** PR #46 merged by David with a merge commit (`0794305`). CI on `prod` green; **Deploy prod** green (run 43150734022): promoted `f2d04c4`, moved `:prod` to it, skipped the deploy (no prod hook secrets yet). `:prod` is public. No prod services on Render yet.
+- #12 (prod deploy): **prod is live.** Frontend https://para-luego-prod-frontend.onrender.com, backend https://para-luego-prod-backend.onrender.com, database on Neon (free). Both report `f2d04c4`, `deployment: prod`. Every live criterion passed except David's Chrome steps (progress comments on #12): Deploy prod end to end, HTTPS flow, dev/prod separation, rollback with a made-up SHA refused, rollback to `4527e3e` and roll forward to `f2d04c4`, second `promote-prod` prints the open PR.
+- `prod` rule: PR required (0 approvals), required check `lint, security, tests, build`, no force push or deletion. `main` unprotected.
+- QA test users left in the databases: `qa12proda2d876` (prod), `qa12deva2d876` (dev).
 
 ## Next up
 
-1. David: Neon project (AWS US East, database `para_luego`, direct string without `-pooler`, `sslmode=require`).
-2. David: Render → New → Blueprint, this repo, branch `prod`, path `render.prod.yaml`, paste the Neon string as `DATABASE_URL`. Then save `RENDER_PROD_BACKEND_DEPLOY_HOOK` / `RENDER_PROD_FRONTEND_DEPLOY_HOOK` as repository secrets.
-3. Orchestrator: re-run Deploy prod run 43150734022 (or wait for the next release), then live QA (both prod URLs report `f2d04c4` + `deployment: prod`, HTTPS flow, dev/prod separation, rollback to `4527e3e…` and roll forward, made-up SHA). David in Chrome: wake-up after ~16 idle minutes, Copiar. Then final `## QA` on #12 and close it.
-- Don't push to `main` while waiting for services to sleep. Deadline Friday 2026-11-13.
+1. David in Chrome: after ~16 minutes without prod traffic (last request 04:05 UTC = 22:05 Costa Rica), open https://para-luego-prod-frontend.onrender.com: Render's wake page, then "Despertando el servicio…", then login works; save an item and press Copiar. Don't open prod (or let anything call it) before that.
+2. Orchestrator: final `## QA: PASS` on #12, label `qa-pass`, close #12.
+3. Then the next groomed/backlog issue per `_docs/process.md` (lowest number: #13). Deadline Friday 2026-11-13.
 
 ## Decisions
 
