@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-11, by the orchestrator session (#12: release PR #46 open, waiting for David to merge it)
+**Last updated:** 2026-11-11, by the orchestrator session (#12: first release merged, `:prod` exists; waiting for Neon + prod Blueprint + hook secrets)
 
 ## Current state
 
@@ -30,15 +30,15 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 
 ## In progress
 
-- #12 (prod deploy, issue open for the live QA): PRs #44 and #45 merged into `main` (dev reports `4527e3e`). #45 fixed Deploy prod checking out prod's older Makefile (first live run failed with `No rule to make target 'promoted-sha'`; `## QA: FAIL` then pre-merge PASS of the fix on #12).
-- `prod` branch exists (created at `68de85a`). David moved the protection rule from `main` (where it blocked PR #45 with a required review) to `prod`: PR required, 0 approvals, no force push or deletion. **Missing on `prod`: the required status check `lint, security, tests, build`.** `main` has no protection (the responder pushes there).
-- **Release PR #46** (`main` → `prod`) opened with `make promote-prod`; running it again printed the open PR (live criterion OK). Waiting for its CI and for David to merge it with **Create a merge commit**. That Deploy prod run creates `:prod` and skips the deploy (no prod hook secrets yet).
+- #12 (prod deploy, issue open for the live QA): PRs #44 and #45 merged into `main` (dev reports `4527e3e`; `main` has since moved to `f2d04c4`, docs only).
+- `prod` branch: rule with PR required (0 approvals), required check `lint, security, tests, build`, no force push or deletion. `main` unprotected (the responder pushes there).
+- **First release done:** PR #46 merged by David with a merge commit (`0794305`). CI on `prod` green; **Deploy prod** green (run 43150734022): promoted `f2d04c4`, moved `:prod` to it, skipped the deploy (no prod hook secrets yet). `:prod` is public. No prod services on Render yet.
 
 ## Next up
 
-1. David merges PR #46 with **Create a merge commit**; orchestrator checks Deploy prod (should find the promoted main commit, move `:prod`, skip the deploy with a notice).
-2. David: Neon project (AWS US East, database `para_luego`, direct string without `-pooler`, `sslmode=require`); Render Blueprint on branch `prod`, path `render.prod.yaml`, Neon string as `DATABASE_URL`; save `RENDER_PROD_BACKEND_DEPLOY_HOOK` / `RENDER_PROD_FRONTEND_DEPLOY_HOOK`; add the required status check to the `prod` rule.
-3. Orchestrator: re-run Deploy prod, live QA (HTTPS flow, dev/prod separation, rollback + roll forward, made-up SHA). David in Chrome: wake-up after ~16 idle minutes, Copiar. Then final `## QA` on #12 and close it.
+1. David: Neon project (AWS US East, database `para_luego`, direct string without `-pooler`, `sslmode=require`).
+2. David: Render → New → Blueprint, this repo, branch `prod`, path `render.prod.yaml`, paste the Neon string as `DATABASE_URL`. Then save `RENDER_PROD_BACKEND_DEPLOY_HOOK` / `RENDER_PROD_FRONTEND_DEPLOY_HOOK` as repository secrets.
+3. Orchestrator: re-run Deploy prod run 43150734022 (or wait for the next release), then live QA (both prod URLs report `f2d04c4` + `deployment: prod`, HTTPS flow, dev/prod separation, rollback to `4527e3e…` and roll forward, made-up SHA). David in Chrome: wake-up after ~16 idle minutes, Copiar. Then final `## QA` on #12 and close it.
 - Don't push to `main` while waiting for services to sleep. Deadline Friday 2026-11-13.
 
 ## Decisions
@@ -97,7 +97,7 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 | 2026-11-08 | #8 (approved by David): share text built in the frontend from the `Item` it already gets; format title / note / URL one per line; buttons on `/items` and the Daily; text in an escaped HTML attribute, read by one vanilla script | No API change needed; avoids user data inside `<script>`; plan section 3 and testing guidelines ask for both pages |
 | 2026-11-08 | #9 (approved by David): `make test` runs every suite including integration on a throwaway Postgres (port 5433); per-suite targets need no Docker | AGENTS.md and plan section 9 already promise it; CI (#10) calls the same targets; tests never touch dev data |
 | 2026-11-08 | #10 (approved by David, with `bandit` and `pip-audit`): CI is one job calling the make targets; runs on every PR and on pushes to `main`/`prod`; no branch protection on `main` (the responder pushes there) | Same commands locally and in CI; no duplicate runs; matches the on-call design |
-| 2026-11-11 | `main` stays unprotected; `prod` requires a PR (0 approvals) and should require the CI check | The responder pushes fixes straight to `main`; David merges his own release PRs |
+| 2026-11-11 | `main` stays unprotected; `prod` requires a PR (0 approvals) and the CI check | The responder pushes fixes straight to `main`; David merges his own release PRs |
 | 2026-11-08 | #12 (approved by David): prod in its own Blueprint `render.prod.yaml` on branch `prod`; deploy-prod deploys the promoted `main` image (no rebuild) and moves `:prod` | Render's `imgURL` affects only one deploy and later deploys use the stored tag; a Blueprint on `main` would change prod on every merge to `main` and syncs ignore `sync: false` |
 | 2026-11-08 | #11: the browser wakes the sleeping Render backend (`BACKEND_PUBLIC_URL`); server-side retries only 5 s | Render's logs showed calls from the frontend service never wake a free backend; only internet traffic does |
 | 2026-11-08 | ~~Merge PRs without CI until #10~~ Closed: since #10 (merged), PRs merge only with green CI + QA PASS + David's OK | CI exists now (`.github/workflows/ci.yml`) |
