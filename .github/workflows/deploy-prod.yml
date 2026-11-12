@@ -30,10 +30,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
-      # Full history: promoted-sha checks that the commit belongs to main.
+      # Checks out main (this workflow's ref), not the prod commit: prod lags
+      # main, so its Makefile may not have the deploy targets yet. Full history
+      # so promoted-sha can inspect the prod commit by SHA and check it
+      # belongs to main.
       - uses: actions/checkout@v7.0.1
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
           fetch-depth: 0
 
       - name: Image name
