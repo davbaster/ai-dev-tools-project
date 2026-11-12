@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-08, by the orchestrator session (#12: PR #44 green CI + pre-merge QA PASS, waiting for David's OK)
+**Last updated:** 2026-11-11, by the orchestrator session (#12: PR #44 merged, waiting for David's one-time prod steps)
 
 ## Current state
 
@@ -30,13 +30,18 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 
 ## In progress
 
-- #12 (prod deploy): approved by David, implemented on `12-prod-deploy`, **PR #44** (`Closes #12`), label `in-progress`. Adds `render.prod.yaml` (prod Blueprint on branch `prod`, Neon `DATABASE_URL` `sync: false`), `deploy-prod.yml` (after CI on `prod`: `promoted-sha` → `wait-image` → `retag ENV=prod` → `deploy-prod` → `wait-deploy ENV=prod`), `rollback.yml` + `make rollback`, `make promote-prod`, docs (`_docs/deploy.md` prod/rollback sections and David's one-time steps). `make lint`/`security`/`test` green (71/67/4/51). CI green on the PR; pre-merge `## QA: PASS` posted on #12 (live criteria pending). **Waiting for David's OK to merge.** Follow-ups: #42, #43.
+- #12 (prod deploy): PR #44 merged into `main` (`b2ee5b2`) with David's OK, green CI. CI and CD dev green on the merge; dev reports `b2ee5b2` (first live criterion OK). The merge auto-closed #12; **reopened** because the live criteria are pending. Adds `render.prod.yaml` (prod Blueprint on branch `prod`, Neon `DATABASE_URL` `sync: false`), `deploy-prod.yml`, `rollback.yml`, `make promote-prod` / `rollback` / `deploy-prod` / `wait-image` / `retag` / `promoted-sha`. Pre-merge `## QA: PASS` posted. Follow-ups: #42, #43.
+- Nothing exists for prod yet: no `prod` branch, no prod secrets, no prod services.
 
 ## Next up
 
-1. David's OK → merge PR #44 (CI green, pre-merge QA PASS). Merging changes nothing on Render (`render.yaml` is still dev-only).
-2. David's one-time steps from `_docs/deploy.md` → "One-time setup for prod": Neon, `prod` branch at `68de85a`, protect `prod`, `make promote-prod` + merge with a merge commit, prod Blueprint (`render.prod.yaml`, branch `prod`), prod hook secrets, re-run Deploy prod.
-3. Live QA on prod (David does the Chrome steps: wake-up, Copiar), then `## QA` on #12.
+David's one-time steps (`_docs/deploy.md` → "One-time setup for prod"), then the live QA:
+1. David: Neon project (AWS US East, database `para_luego`), copy the direct string (no `-pooler`, `sslmode=require`); keep it for Render only.
+2. `prod` branch at `68de85a` (David, or the orchestrator with his OK): `git push origin 68de85a8f9349755733eec7ca3e1fb9ee23b765d:refs/heads/prod`. David protects `prod` (PR + check `lint, security, tests, build`, no force push).
+3. Orchestrator: `make promote-prod`; David merges it with **Create a merge commit**.
+4. David: Render Blueprint, branch `prod`, path `render.prod.yaml`, Neon string as `DATABASE_URL`; save `RENDER_PROD_BACKEND_DEPLOY_HOOK` / `RENDER_PROD_FRONTEND_DEPLOY_HOOK`.
+5. Orchestrator: re-run Deploy prod, live QA (HTTPS flow, dev/prod separation, rollback + roll forward, made-up SHA, second promote-prod). David in Chrome: wake-up after ~16 idle minutes, Copiar. Then final `## QA` on #12 and close it.
+- Don't push to `main` while waiting for services to sleep. Deadline Friday 2026-11-13.
 
 ## Decisions
 
