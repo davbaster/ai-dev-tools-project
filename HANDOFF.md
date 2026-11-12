@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-12, by the orchestrator session (#13: PR #47 green CI + pre-merge QA PASS, waiting for David's OK)
+**Last updated:** 2026-11-12, by the orchestrator session (#13 merged; Render logs check pending)
 
 ## Current state
 
@@ -31,13 +31,12 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 
 ## In progress
 
-- #13 (OpenTelemetry + JSON logs): approved by David with the six OpenTelemetry dependencies. Implemented on `13-otel`, **PR #47**, CI green, pre-merge `## QA: PASS` on #13. **Waiting for David's OK to merge.** The commit says `Closes #13` (an amend to `Refs` needed a force push, which was blocked): if the merge closes #13, reopen it until the dev check passes.
-- What it adds: shared `telemetry/` (JSON logs with trace ids for every line, own access log by route template, `http.requests` / `http.server.request.duration` metrics with `unmatched` for 404s, FastAPI spans without health, OTLP/HTTP export only with `OTEL_EXPORTER_OTLP_ENDPOINT`), httpx client spans + `traceparent`, backend DB spans with `EngineTracer`, `items.saved`. `tests/conftest.py` installs in-memory providers for every suite.
+- #13 (OpenTelemetry + JSON logs): PR #47 merged (`36d0d0c`) with David's OK; CI and CD dev green; dev reports `36d0d0c`. The merge auto-closed #13; **reopened**. Dev flow works as before (register, Daily, save, WhatsApp link, Copiar button, delete, "Backend: ok (dev)"; test user `qa13devac633c`). **Pending:** someone signed in to Render checks that both dev services' logs are JSON lines with `trace_id` (the built-in browser isn't signed in to Render). Then final `## QA` on #13.
 
 ## Next up
 
-1. David's OK → merge PR #47 → CI and CD dev → dev live check (Render logs JSON with trace ids; save, Daily, share, wake-up still work) → final `## QA` on #13.
-2. #14 (observability stack in Compose: collector, Prometheus, Tempo, Loki, Grafana) sets `OTEL_EXPORTER_OTLP_ENDPOINT` in Compose and ships stdout logs to Loki.
+1. Render logs check for #13 (David, or David signs in to Render in the browser pane), then final `## QA: PASS` on #13 and close it.
+2. #14 (observability stack in Compose) sets `OTEL_EXPORTER_OTLP_ENDPOINT` in Compose and ships stdout logs to Loki.
 3. #43 before 2026-12-08.
 - Deadline Friday 2026-11-13 (Costa Rica). Don't push to `main` while waiting for services to sleep.
 
