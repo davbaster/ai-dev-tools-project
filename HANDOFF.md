@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-11, by the orchestrator session (#12 closed: prod live on Render + Neon)
+**Last updated:** 2026-11-12, by the orchestrator session (#13 groomed, waiting for David's review and dependency OK)
 
 ## Current state
 
@@ -31,12 +31,12 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 
 ## In progress
 
-- Nothing.
+- #13 (OpenTelemetry + JSON logs): **groomed** by the PM (label `groomed`), waiting for David's review and his OK on the new runtime dependencies: `opentelemetry-api`, `-sdk`, `-exporter-otlp-proto-http`, `-instrumentation-fastapi`, `-instrumentation-httpx`, `-instrumentation-sqlalchemy`. Design: one trace frontend → backend → DB (W3C `traceparent`), metrics `http.requests` / `http.server.request.duration` by route template (`unmatched` for 404s) and `items.saved`; JSON logs with `trace_id`/`span_id` for every line (uvicorn and Alembic included), own access log instead of uvicorn's; export only when `OTEL_EXPORTER_OTLP_ENDPOINT` is set (not on Render); tests check no customer data.
 
 ## Next up
 
-1. Pick the next issue per `_docs/process.md`: lowest-numbered open issue is #13 (OpenTelemetry instrumentation + structured logs); it needs PM grooming first. Remaining seed issues: #13-#20; follow-ups #26, #28-#30, #33, #42, #43.
-2. #43 before 2026-12-08 (dev database expires).
+1. David reviews #13 and approves (or not) the dependencies. Then engineer on branch `13-otel`, `make lint`/`security`/`test`, PR, green CI, QA (local `make logs` same `trace_id`; dev logs JSON), merge only with David's OK.
+2. #14 (observability stack) after #13. #43 before 2026-12-08.
 - Deadline Friday 2026-11-13 (Costa Rica). Don't push to `main` while waiting for services to sleep.
 
 ## Decisions
