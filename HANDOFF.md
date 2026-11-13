@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-13, by the orchestrator session (#17: PR #51 green CI, live QA waiting for David's keys)
+**Last updated:** 2026-11-13, by the orchestrator session (#17: QA PASS, PR #51 green, waiting for David's OK)
 
 ## Current state
 
@@ -35,13 +35,15 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 
 ## In progress
 
-- #17 (on-call responder): approved by David with the four decisions. Implemented on `17-responder`, **PR #51** (`Refs #17`), CI green. Verified without keys: `make up` healthy, webhook 401/202, JSON logs; inside the container the real checks pass for a good change and fail for a bad one; the agent lists and calls the MCP tools. Unit tests with fakes cover the fix, push-disabled, failing-checks, escalation, limits, dedupe and resolved paths.
-- **Blocked on David:** the live QA needs a local `.env` (gitignored; it doesn't exist yet) with `LLM_API_KEY` and a fine-grained `GITHUB_TOKEN` (this repo only; Contents, Issues, Pull requests read/write). Then: escalation by stopping Postgres; fix path with `RESPONDER_ALLOW_PUSH=true`, `RESPONDER_TARGET_BRANCH=qa17-responder` and a locally planted bug. Then `## QA` on #17 and merge with David's OK.
+- #17 (on-call responder): **PR #51** (`Refs #17`), CI green at `3407b3d`, **`## QA: PASS`** on #17 after the live QA with David's keys (escalation path #54/#55; fix path against throwaway branches #60/#61, auto-closed on resolve; branches deleted). **Waiting for David's OK to merge**; then close #17 by hand (`Refs`).
+- QA fixes in the PR: `LLM_REASONING_EFFORT=none` (OpenAI tools + reasoning), auto `ruff format` of proposed files, search/replace edits for existing files (no `[REDACTED]` copied into code).
+- David's local `.env`: `RESPONDER_ALLOW_PUSH=false`, `RESPONDER_TARGET_BRANCH=main` (restored); `POSTGRES_PASSWORD`/`DATABASE_URL` aligned to the existing volume (`para_luego_local`, see #63).
+- Follow-ups filed: #62 (one cause → two incidents), #63 (`.env.example` Postgres password).
 
 ## Next up
 
-1. David creates `.env` with the two keys → live QA of #17 → merge PR #51.
-2. Then #18 (admin panel + cloud responder), #19 (demo bug + end-to-end demo), #20 (README). #43 before 2026-12-08.
+1. David's OK → merge PR #51 → close #17.
+2. #19 (demo bug behind a flag + end-to-end demo) and #18 (admin panel + cloud responder), then #20 (README). #43 before 2026-12-08.
 - Deadline Friday 2026-11-13 (Costa Rica). Don't push to `main` while waiting for services to sleep.
 
 ## Decisions
@@ -111,6 +113,7 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 | 2026-11-12 | MCP audit through the SDK's request middleware + an ASGI auth middleware; client = User-Agent | Audits every tools/call, even those rejected by argument validation, and denied requests; stateless HTTP has no session client info |
 | 2026-11-12 | #17 (approved by David): LLM over httpx (OpenAI-compatible), fine-grained `GITHUB_TOKEN`, checks on a temp copy before a commit through the GitHub API, `RESPONDER_ALLOW_PUSH=false` by default | No new dependency; least privilege; nothing reaches `main` unchecked or by surprise |
 | 2026-11-13 | Missing `GITHUB_TOKEN` doesn't stop the responder (alerts are only logged) | `make up` must keep working on a fresh clone without secrets |
+| 2026-11-13 | Responder edits existing files only through exact search/replace on the real file; formats proposed files before checking; `LLM_REASONING_EFFORT=none` by default | Found in live QA: redacted text copied into code, fixes failing only on format, OpenAI rejecting tools with reasoning |
 | 2026-11-11 | `main` stays unprotected; `prod` requires a PR (0 approvals) and the CI check | The responder pushes fixes straight to `main`; David merges his own release PRs |
 | 2026-11-08 | #12 (approved by David): prod in its own Blueprint `render.prod.yaml` on branch `prod`; deploy-prod deploys the promoted `main` image (no rebuild) and moves `:prod` | Render's `imgURL` affects only one deploy and later deploys use the stored tag; a Blueprint on `main` would change prod on every merge to `main` and syncs ignore `sync: false` |
 | 2026-11-08 | #11: the browser wakes the sleeping Render backend (`BACKEND_PUBLIC_URL`); server-side retries only 5 s | Render's logs showed calls from the frontend service never wake a free backend; only internet traffic does |
