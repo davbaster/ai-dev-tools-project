@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-12, by the orchestrator session (#16: PR #50 green CI + QA PASS, waiting for David's OK)
+**Last updated:** 2026-11-12, by the orchestrator session (#16 closed: MCP server merged)
 
 ## Current state
 
@@ -29,19 +29,18 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 - #13 (OpenTelemetry + JSON logs): approved by David with six OpenTelemetry dependencies, PR #47 merged with green CI and David's OK. **QA: PASS**, #13 closed. Shared `telemetry/` package; one trace frontend → backend → DB; JSON logs with trace ids on dev (checked in Render's logs: frontend `POST /items` and backend `item saved` share the trace id). No export on Render (no `OTEL_EXPORTER_OTLP_ENDPOINT`). Test user `qa13devac633c` on dev.
 - #14 (local observability): approved by David, PR #48 merged with green CI and David's OK. **QA: PASS**, #14 closed. `make up` also runs the OTel Collector, Prometheus, Tempo, Loki and Grafana (http://localhost:3000, dashboard "Para Luego"); see `observability/README.md`. Dev on Render unchanged (reports `b426e20`).
 - #15 (alerts + webhook): approved by David, PR #49 merged with green CI and David's OK. **QA: PASS**, #15 closed. Grafana rules SaveItemFailing and HighServerErrors; webhook to `ALERT_WEBHOOK_URL` (default `http://oncall-agent:8080/alerts`) with a bearer token; payload and how to trigger them in `observability/README.md`. Dev reports `2a880c1`.
+- #16 (MCP server): approved by David with `mcp`, PR #50 merged with green CI and David's OK. **QA: PASS**, #16 closed. `make up` runs `mcp-server` at http://127.0.0.1:8090/mcp (bearer `MCP_TOKEN`) with four read-only tools, redaction and an audit log (`make mcp-audit`); see `oncall/mcp_server/README.md`. Dev reports `2b909c5`.
 - `/` now calls `getMe` and then `getDaily`; frontend test fakes that serve `/` must answer `/api/daily`.
 - Deadline: **Friday 2026-11-13** (Costa Rica time). Peer reviews of three other projects are also required to pass.
 
 ## In progress
 
-- #16 (MCP server): approved by David with `mcp`. Implemented on `16-mcp-server`, **PR #50** (`Closes #16`), CI green, **`## QA: PASS`** on #16 (local live QA over HTTP with the SDK client). **Waiting for David's OK to merge.**
-- Adds `oncall/mcp_server/` (server, tools, redact, guards, audit, README), Compose `mcp-server` at 127.0.0.1:8090 with bearer `MCP_TOKEN`, `make mcp`, `make mcp-audit`; Dockerfile copies `oncall/` and creates `/var/log/mcp` for `appuser`.
+- Nothing.
 
 ## Next up
 
-1. David's OK → merge PR #50.
-2. Groom #17 (responder): receives the #15 webhook at `http://oncall-agent:8080/alerts` (bearer `ALERT_WEBHOOK_TOKEN`), opens the `incident` issue, investigates through the MCP server (`http://mcp-server:8090/mcp`, bearer `MCP_TOKEN`), pushes a fix to `main` + PR to `prod` or labels `needs-human`. Needs an LLM (`LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`) and GitHub access: dependency and secrets decisions for David.
-3. Then #18 (admin panel), #19 (demo bug), #20 (README). #43 before 2026-12-08.
+1. Groom #17 (responder): receives the #15 webhook at `http://oncall-agent:8080/alerts` (bearer `ALERT_WEBHOOK_TOKEN`; payload in `observability/README.md`), opens the `incident` issue, investigates through the MCP server (`http://mcp-server:8090/mcp`, bearer `MCP_TOKEN`; `oncall/mcp_server/README.md`), pushes a fix to `main` + PR to `prod` (`make promote-prod`) or labels `needs-human`. Decisions for David: LLM (`LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`, default `gpt-6-luna`), a client library (dependency), and GitHub access for the agent (token scope, how it pushes to `main`).
+2. Then #18 (admin panel), #19 (demo bug), #20 (README). #43 before 2026-12-08.
 - Deadline Friday 2026-11-13 (Costa Rica). Don't push to `main` while waiting for services to sleep.
 
 ## Decisions
