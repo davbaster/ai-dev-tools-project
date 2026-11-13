@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-12, by the orchestrator session (#17 groomed, waiting for David's review and decisions)
+**Last updated:** 2026-11-13, by the orchestrator session (#17: PR #51 green CI, live QA waiting for David's keys)
 
 ## Current state
 
@@ -35,11 +35,12 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 
 ## In progress
 
-- #17 (on-call responder): **groomed** by the PM (label `groomed`), waiting for David's review and four decisions: (1) LLM through an OpenAI-compatible API with `httpx`, no new dependency, David provides `LLM_API_KEY` (model `gpt-6-luna`); (2) a fine-grained `GITHUB_TOKEN` for this repo (Contents, Issues, PRs read/write; no Workflows); (3) checks before push (ruff + unit/frontend/contract) in a Dockerfile target with dev deps, on a temp copy; commits through the GitHub API; (4) `RESPONDER_ALLOW_PUSH=false` by default, `RESPONDER_TARGET_BRANCH` for QA. Design: Compose `oncall-agent` at `127.0.0.1:8080/alerts` (bearer `ALERT_WEBHOOK_TOKEN`), one incident per alertname, LLM loop with the 4 MCP tools + `propose_fix` + `escalate` (20 steps / 10 min), fix → commit `Fixes #n` + PR `main` → `prod`, or `needs-human`.
+- #17 (on-call responder): approved by David with the four decisions. Implemented on `17-responder`, **PR #51** (`Refs #17`), CI green. Verified without keys: `make up` healthy, webhook 401/202, JSON logs; inside the container the real checks pass for a good change and fail for a bad one; the agent lists and calls the MCP tools. Unit tests with fakes cover the fix, push-disabled, failing-checks, escalation, limits, dedupe and resolved paths.
+- **Blocked on David:** the live QA needs a local `.env` (gitignored; it doesn't exist yet) with `LLM_API_KEY` and a fine-grained `GITHUB_TOKEN` (this repo only; Contents, Issues, Pull requests read/write). Then: escalation by stopping Postgres; fix path with `RESPONDER_ALLOW_PUSH=true`, `RESPONDER_TARGET_BRANCH=qa17-responder` and a locally planted bug. Then `## QA` on #17 and merge with David's OK.
 
 ## Next up
 
-1. David reviews #17 and decides. QA needs his `LLM_API_KEY` and `GITHUB_TOKEN` in the local `.env`.
+1. David creates `.env` with the two keys → live QA of #17 → merge PR #51.
 2. Then #18 (admin panel + cloud responder), #19 (demo bug + end-to-end demo), #20 (README). #43 before 2026-12-08.
 - Deadline Friday 2026-11-13 (Costa Rica). Don't push to `main` while waiting for services to sleep.
 
@@ -108,6 +109,8 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 | 2026-11-12 | #15: Grafana alerting from files (no Alertmanager); webhook to `ALERT_WEBHOOK_URL` with a bearer token; 30 s / 1 min / no data = OK | David approved; one tool already running; the responder can reject anything not from Grafana |
 | 2026-11-12 | `mcp` 2.3.0 approved (MCPServer, Streamable HTTP, stateless) | David approved for #16; plan names the SDK |
 | 2026-11-12 | MCP audit through the SDK's request middleware + an ASGI auth middleware; client = User-Agent | Audits every tools/call, even those rejected by argument validation, and denied requests; stateless HTTP has no session client info |
+| 2026-11-12 | #17 (approved by David): LLM over httpx (OpenAI-compatible), fine-grained `GITHUB_TOKEN`, checks on a temp copy before a commit through the GitHub API, `RESPONDER_ALLOW_PUSH=false` by default | No new dependency; least privilege; nothing reaches `main` unchecked or by surprise |
+| 2026-11-13 | Missing `GITHUB_TOKEN` doesn't stop the responder (alerts are only logged) | `make up` must keep working on a fresh clone without secrets |
 | 2026-11-11 | `main` stays unprotected; `prod` requires a PR (0 approvals) and the CI check | The responder pushes fixes straight to `main`; David merges his own release PRs |
 | 2026-11-08 | #12 (approved by David): prod in its own Blueprint `render.prod.yaml` on branch `prod`; deploy-prod deploys the promoted `main` image (no rebuild) and moves `:prod` | Render's `imgURL` affects only one deploy and later deploys use the stored tag; a Blueprint on `main` would change prod on every merge to `main` and syncs ignore `sync: false` |
 | 2026-11-08 | #11: the browser wakes the sleeping Render backend (`BACKEND_PUBLIC_URL`); server-side retries only 5 s | Render's logs showed calls from the frontend service never wake a free backend; only internet traffic does |
