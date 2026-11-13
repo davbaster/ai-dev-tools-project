@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-13, by the orchestrator session (#19: PR #64 green CI + pre-merge QA, waiting for David's OK)
+**Last updated:** 2026-11-13, by the orchestrator session (#19 closed: live demo passed; prod PR #67 waiting for David)
 
 ## Current state
 
@@ -31,18 +31,21 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 - #15 (alerts + webhook): approved by David, PR #49 merged with green CI and David's OK. **QA: PASS**, #15 closed. Grafana rules SaveItemFailing and HighServerErrors; webhook to `ALERT_WEBHOOK_URL` (default `http://oncall-agent:8080/alerts`) with a bearer token; payload and how to trigger them in `observability/README.md`. Dev reports `2a880c1`.
 - #16 (MCP server): approved by David with `mcp`, PR #50 merged with green CI and David's OK. **QA: PASS**, #16 closed. `make up` runs `mcp-server` at http://127.0.0.1:8090/mcp (bearer `MCP_TOKEN`) with four read-only tools, redaction and an audit log (`make mcp-audit`); see `oncall/mcp_server/README.md`. Dev reports `2b909c5`.
 - #17 (on-call responder): approved by David, PR #51 merged with green CI and David's OK. **QA: PASS** (live, with David's keys), #17 closed. `make up` runs `oncall-agent` (127.0.0.1:8080): Grafana webhook → `incident` issue → LLM investigation with the MCP tools → fix commit `Fixes #n` + prod PR, or `needs-human`. Push is off by default (`RESPONDER_ALLOW_PUSH`). See `oncall/agent/README.md`. Dev reports `5e5d035`.
+- #19 (demo bug + demo): PR #64 merged with green CI and David's OK. **QA: PASS** with the live demo: `make demo-on` → incidents #65/#66 → responder pushed the fix to `main` (`c3a3adf`, `d4e7041`) → CI/CD to dev → prod PR #67 → local backend with the fix → alert resolved. #19 closed. Script: `_docs/demo.md`.
 - `/` now calls `getMe` and then `getDaily`; frontend test fakes that serve `/` must answer `/api/daily`.
 - Deadline: **Friday 2026-11-13** (Costa Rica time). Peer reviews of three other projects are also required to pass.
 
 ## In progress
 
-- #19 (demo bug + demo): approved by David (including one real responder push to `main` in the QA). Implemented on `19-demo-bug`, **PR #64** (`Refs #19`), CI green, pre-merge `## QA: PASS` on #19. **Waiting for David's OK to merge**; the live demo (= final QA) runs after the merge because the bug must be on `main`.
-- Adds `display_title()` in `backend/items.py` (bug behind `BUG_SAVE_ITEM=1`: `IndexError` for titles over 40 characters), `make demo-on` / `make demo-off`, `_docs/demo.md`.
+- Nothing running. **Prod PR #67** ("Release: main to prod", opened by the responder during the demo, CI green, links #65) is waiting for David's decision to merge (Create a merge commit).
 
 ## Next up
 
-1. David's OK → merge PR #64 → CI/CD → the live demo: `.env` with `RESPONDER_ALLOW_PUSH=true`, `RESPONDER_TARGET_BRANCH=main`, `make up`, `make demo-on`, long titles → incident → responder pushes the fix to `main` → CI/CD → prod PR → `git pull` + `BUG_SAVE_ITEM=1 make up` → resolved/closed; then push back to `false`, final `## QA` on #19.
-2. #20 (README), then #18 (admin panel; scope with David). Deadline today, Friday 2026-11-13.
+Deadline today, Friday 2026-11-13.
+1. **Demo polish (small, proposed to David):** fix commits say `Refs #n` instead of `Fixes #n` (GitHub closed the incidents on push, before the alert resolved); the responder decides "fix pushed" from the incident's comments (survives restarts); `_docs/demo.md` step 4 rebuilds only the backend. Found in #19's live demo.
+2. **#20 README** (required by the course).
+3. #18 admin panel (scope down with David, or leave).
+- The demo bug is fixed on `main` now (`d4e7041`); re-arm with a revert PR before the next demo (`_docs/demo.md`).
 - Follow-ups in backlog: #26, #28-#30, #33, #42, #43 (dev DB expires 2026-12-08), #62, #63.
 
 ## Decisions
