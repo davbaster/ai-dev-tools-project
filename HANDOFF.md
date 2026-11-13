@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-13, by the orchestrator session (#69 closed: make demo-local merged)
+**Last updated:** 2026-11-13, by the orchestrator session (#71 closed: incidents close on resolve)
 
 ## Current state
 
@@ -34,22 +34,23 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 - #19 (demo bug + demo): PR #64 merged with green CI and David's OK. **QA: PASS** with the live demo: `make demo-on` → incidents #65/#66 → responder pushed the fix to `main` (`c3a3adf`, `d4e7041`) → CI/CD to dev → prod PR #67 → local backend with the fix → alert resolved. #19 closed. Script: `_docs/demo.md`.
 - #20 (README): PR #68 merged with green CI and David's OK. **QA: PASS**, #20 closed. Root `README.md` is the entry point for reviewers. Dev reports `233e7b5`.
 - #69 (local demo for reviewers): PR #70 merged with green CI and David's OK. **QA: PASS** (clean clone without `.env`, replay mode; live with David's key), #69 closed. `make demo-local` runs bug → alert → responder fix → draft prod PR locally, no GitHub, no keys needed. Dev reports `d557bc2`.
+- #71 (close on resolve): PR #72 merged by David (`ae4233e`, green CI). **QA: PASS**, #71 closed. Fix commits say `Refs #n`; the responder closes the incident when the alert resolves, also after a restart (hidden marker in the fix comment).
 - `/` now calls `getMe` and then `getDaily`; frontend test fakes that serve `/` must answer `/api/daily`.
 - Deadline: **Friday 2026-11-13** (Costa Rica time). Peer reviews of three other projects are also required to pass.
 
 ## In progress
 
-- Nothing running. **Prod PR #67** (Release: main to prod; carries everything on `main`, now up to `d557bc2`) is open, CI green, waiting for David to merge with **Create a merge commit**.
+- Nothing running. **Prod PR #67** (Release: main to prod, now up to `ae4233e`) is open, CI green, waiting for David to merge with **Create a merge commit**. Prod still runs `f2d04c4` (2026-11-11).
 - The local stack is stopped; `make up` brings `main` back.
 
 ## Next up
 
 Deadline today, Friday 2026-11-13.
-1. David: merge prod PR #67 if he wants prod on the latest `main`.
-2. Demo polish for the GitHub mode (proposed): `Refs #n`, restart-safe "fix pushed" state, `_docs/demo.md` rebuilds only the backend.
-3. #18 admin panel (the README lists it as not built).
-- Reviewers: `make demo-local` (no keys needed). If `display_title` changes, re-record the replay (`_docs/demo.md`).
-- Follow-ups in backlog: #26, #28-#30, #33, #42, #43 (dev DB expires 2026-12-08), #62, #63.
+1. David: merge prod PR #67 so prod gets everything since 2026-11-11.
+2. David: peer reviews of three other projects (course requirement).
+3. #18 admin panel + cloud demo mode: not built; the README says so. Scope down only if time allows.
+- After the deadline: #43 (dev DB expires 2026-12-08), #62, #63, #42, and the app follow-ups #26, #28-#30, #33.
+- Reviewers: `make demo-local`. If `display_title` changes, re-record the replay (`_docs/demo.md`).
 
 ## Decisions
 
