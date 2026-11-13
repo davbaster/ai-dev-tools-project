@@ -22,10 +22,13 @@ RUN uv sync --locked --no-dev
 COPY backend ./backend
 COPY frontend ./frontend
 COPY telemetry ./telemetry
+COPY oncall ./oncall
 COPY alembic.ini ./
 COPY migrations ./migrations
 
-RUN useradd --system --uid 10001 --no-create-home appuser
+# /var/log/mcp: el log de auditoría del servidor MCP (#16), escribible por appuser.
+RUN useradd --system --uid 10001 --no-create-home appuser \
+    && mkdir -p /var/log/mcp && chown appuser /var/log/mcp
 USER appuser
 
 EXPOSE 8000 8001

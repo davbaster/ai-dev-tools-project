@@ -2,7 +2,7 @@
 # Compatible with GNU Make 3.81 (no .ONESHELL or newer features).
 
 .DEFAULT_GOAL := help
-.PHONY: help install dev-backend dev-frontend lint format security ci-local test test-unit test-frontend test-contract test-integration migrate build up down logs image push-image wait-image retag promoted-sha deploy-hooks deploy-dev deploy-prod wait-deploy rollback promote-prod
+.PHONY: help install dev-backend dev-frontend lint format security ci-local mcp mcp-audit test test-unit test-frontend test-contract test-integration migrate build up down logs image push-image wait-image retag promoted-sha deploy-hooks deploy-dev deploy-prod wait-deploy rollback promote-prod
 
 help: ## List every target
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  %-17s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -29,7 +29,7 @@ format: ## Format and auto-fix with ruff
 PIP_AUDIT_IGNORE =
 
 security: ## Scan the code with bandit (medium+) and the installed dependencies with pip-audit
-	uv run bandit -r backend frontend telemetry -ll -q
+	uv run bandit -r backend frontend telemetry oncall -ll -q
 	uv run pip-audit --skip-editable --progress-spinner off $(PIP_AUDIT_IGNORE)
 
 test: test-unit test-frontend test-contract test-integration ## Run every suite, in order; stops at the first failing one (needs Docker)
@@ -61,6 +61,16 @@ test-integration: ## Run the integration tests on a throwaway Postgres (TEST_DB_
 		$(TEST_DB) down -v; \
 		exit $$status; \
 	fi
+
+# Servidor MCP fuera de Docker: lee Loki, Prometheus y la app publicados en el host.
+MCP_LOCAL_ENV = LOKI_URL=http://127.0.0.1:3100 PROMETHEUS_URL=http://127.0.0.1:9090 REPO_ROOT=. \
+	HEALTH_URLS=local:frontend=http://127.0.0.1:8000/health,local:backend=http://127.0.0.1:8001/api/health
+
+mcp: ## Run the MCP server locally on 127.0.0.1:8090 (needs MCP_TOKEN; `make up` runs it in Docker)
+	$(MCP_LOCAL_ENV) MCP_HOST=127.0.0.1 MCP_AUDIT_LOG=$${MCP_AUDIT_LOG:-.mcp-audit.jsonl} uv run python -m oncall.mcp_server.server
+
+mcp-audit: ## Print the last 50 entries of the MCP server's audit log (Docker)
+	docker compose exec -T mcp-server tail -n 50 /var/log/mcp/audit.jsonl
 
 migrate: ## Apply database migrations to DATABASE_URL
 	uv run alembic upgrade head

@@ -49,7 +49,7 @@ It is a course final project and a **proof of concept**: keep everything simple,
 | `tests/frontend/` | Tests of the rendered pages and user flows, with the backend faked from the contract. |
 | `tests/contract/` | Backend routes and the frontend client checked against `api/openapi.yaml`. |
 | `oncall/agent/` | Responder agent: receives alerts, investigates, pushes a fix to `main` (dev) or escalates. |
-| `oncall/mcp_server/` | MCP server with the on-call tools. |
+| `oncall/mcp_server/` | MCP server with the read-only on-call tools (`get_recent_logs`, `query_metrics`, `check_health`, `read_source_file`), redaction and audit log. `README.md` explains tools, auth and how to connect a client. |
 | `observability/` | OpenTelemetry Collector, Prometheus, Tempo, Loki and Grafana config (dashboards + alert rules). `README.md` explains the data flow and URLs. |
 | `.github/workflows/` | CI, CD to dev (on `main`), deploy to prod (on `prod`), rollback. |
 | `docker-compose.yml` | The full local system. |
@@ -67,7 +67,7 @@ The root `Makefile` is the single entry point, and CI calls the same targets. Pl
 - `make up` / `make down` - start / stop the full local system (frontend, backend, Postgres, observability stack, on-call agent, MCP server). Grafana http://localhost:3000 (dashboard "Para Luego"), Prometheus :9090, Tempo :3200, Loki :3100, all on 127.0.0.1 (`observability/README.md`)
 - `make logs` - follow the frontend and backend logs
 - `make lint` - ruff (lint + format check)
-- `make security` - bandit (backend, frontend and telemetry, medium severity and above) + pip-audit (installed dependencies); an ignored finding goes in `PIP_AUDIT_IGNORE` with its ID and the reason
+- `make security` - bandit (backend, frontend, telemetry and oncall, medium severity and above) + pip-audit (installed dependencies); an ignored finding goes in `PIP_AUDIT_IGNORE` with its ID and the reason
 - `make test` - every suite in order (`test-unit`, `test-frontend`, `test-contract`, `test-integration`), stopping at the first failure; needs Docker
 - `make test-unit` / `make test-frontend` / `make test-contract` - one suite, no Docker needed
 - `make test-integration` - starts a throwaway Postgres (`docker-compose.test.yml`, port 5433, override with `TEST_DB_PORT=<port>`), runs the integration tests and removes it, even when they fail. `TEST_DATABASE_URL=<url>` uses that database instead (never the dev `para_luego` one)
@@ -77,6 +77,8 @@ The root `Makefile` is the single entry point, and CI calls the same targets. Pl
 - `make deploy-prod TAG=<sha>` - the same for prod (`RENDER_PROD_BACKEND_DEPLOY_HOOK`, `RENDER_PROD_FRONTEND_DEPLOY_HOOK`; the Deploy prod workflow only)
 - `make wait-deploy ENV=<dev|prod> TAG=<sha>` - wait until that environment's health checks report that version (`ENV` defaults to `dev`)
 - `make wait-image TAG=<sha>` / `make retag ENV=<dev|prod> TAG=<sha>` / `make promoted-sha REF=<commit>` - deploy helpers: wait for an image on GHCR, move `:dev`/`:prod` to it, find the `main` commit a `prod` merge promotes
+- `make mcp` - run the MCP server outside Docker on 127.0.0.1:8090 (needs `MCP_TOKEN`; `make up` already runs it as `mcp-server`)
+- `make mcp-audit` - print the last 50 entries of the MCP server's audit log
 - `make ci-local` - run `.github/workflows/ci.yml` locally with `act` (Docker image `catthehacker/ubuntu:act-latest`; the throwaway test database is reached as `host.docker.internal` through `TEST_DB_HOST`)
 - `make promote-prod` - open the PR from `main` to `prod` with `gh` (production deploys when a human merges it with "Create a merge commit"); prints the open one if it exists
 - `make rollback ENV=<dev|prod> TAG=<full sha>` - redeploy a previous image (or the **Rollback** workflow); refuses a bad env, SHA, missing image or missing hooks before touching anything

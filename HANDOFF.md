@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-12, by the orchestrator session (#16 groomed, waiting for David's review and dependency OK)
+**Last updated:** 2026-11-12, by the orchestrator session (#16: PR #50 green CI + QA PASS, waiting for David's OK)
 
 ## Current state
 
@@ -34,12 +34,14 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 
 ## In progress
 
-- #16 (MCP server): **groomed** by the PM (label `groomed`), waiting for David's review and his OK on the `mcp` SDK dependency (2.3.0; brings httpx2, pydantic, starlette, sse-starlette, jsonschema, python-multipart, pyjwt[crypto], pywin32 on Windows). Design: `oncall/mcp_server/`, Streamable HTTP at `127.0.0.1:8090/mcp` (Compose `mcp-server`), bearer `MCP_TOKEN`; read-only tools `get_recent_logs` (Loki, escaped LogQL), `query_metrics` (Prometheus read API, ≤ 50 series), `check_health` (local/dev/prod GETs), `read_source_file` (repo read-only, path guard, allowlist); redaction of every result and audit entry; audit log JSON lines in a volume + stdout; `make mcp`, `make mcp-audit`.
+- #16 (MCP server): approved by David with `mcp`. Implemented on `16-mcp-server`, **PR #50** (`Closes #16`), CI green, **`## QA: PASS`** on #16 (local live QA over HTTP with the SDK client). **Waiting for David's OK to merge.**
+- Adds `oncall/mcp_server/` (server, tools, redact, guards, audit, README), Compose `mcp-server` at 127.0.0.1:8090 with bearer `MCP_TOKEN`, `make mcp`, `make mcp-audit`; Dockerfile copies `oncall/` and creates `/var/log/mcp` for `appuser`.
 
 ## Next up
 
-1. David reviews #16 and decides on `mcp`. On approval: branch `16-mcp-server`, PR, CI, local live QA, merge with David's OK.
-2. #17 (responder) uses these tools and the #15 webhook. Then #18, #19, #20. #43 before 2026-12-08.
+1. David's OK → merge PR #50.
+2. Groom #17 (responder): receives the #15 webhook at `http://oncall-agent:8080/alerts` (bearer `ALERT_WEBHOOK_TOKEN`), opens the `incident` issue, investigates through the MCP server (`http://mcp-server:8090/mcp`, bearer `MCP_TOKEN`), pushes a fix to `main` + PR to `prod` or labels `needs-human`. Needs an LLM (`LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`) and GitHub access: dependency and secrets decisions for David.
+3. Then #18 (admin panel), #19 (demo bug), #20 (README). #43 before 2026-12-08.
 - Deadline Friday 2026-11-13 (Costa Rica). Don't push to `main` while waiting for services to sleep.
 
 ## Decisions
@@ -105,6 +107,8 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 | 2026-11-12 | #14: logs reach Loki through the collector's `file_log` receiver on Docker's json-file logs (read-only mount, collector as root); Loki label is `service_name` | David's choice over Alloy + Docker socket; Loki's OTLP ingestion names it `service_name` |
 | 2026-11-12 | Observability UIs on 127.0.0.1, Grafana anonymous Editor locally, no volumes; `OTEL_METRIC_EXPORT_INTERVAL=10000` in Compose | Local demo only; dashboards update within seconds |
 | 2026-11-12 | #15: Grafana alerting from files (no Alertmanager); webhook to `ALERT_WEBHOOK_URL` with a bearer token; 30 s / 1 min / no data = OK | David approved; one tool already running; the responder can reject anything not from Grafana |
+| 2026-11-12 | `mcp` 2.3.0 approved (MCPServer, Streamable HTTP, stateless) | David approved for #16; plan names the SDK |
+| 2026-11-12 | MCP audit through the SDK's request middleware + an ASGI auth middleware; client = User-Agent | Audits every tools/call, even those rejected by argument validation, and denied requests; stateless HTTP has no session client info |
 | 2026-11-11 | `main` stays unprotected; `prod` requires a PR (0 approvals) and the CI check | The responder pushes fixes straight to `main`; David merges his own release PRs |
 | 2026-11-08 | #12 (approved by David): prod in its own Blueprint `render.prod.yaml` on branch `prod`; deploy-prod deploys the promoted `main` image (no rebuild) and moves `:prod` | Render's `imgURL` affects only one deploy and later deploys use the stored tag; a Blueprint on `main` would change prod on every merge to `main` and syncs ignore `sync: false` |
 | 2026-11-08 | #11: the browser wakes the sleeping Render backend (`BACKEND_PUBLIC_URL`); server-side retries only 5 s | Render's logs showed calls from the frontend service never wake a free backend; only internet traffic does |
