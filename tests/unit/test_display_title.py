@@ -1,7 +1,5 @@
 """Titles as stored, with and without the demo flag BUG_SAVE_ITEM (#19)."""
 
-import pytest
-
 from backend.items import display_title
 
 LONG = "Un artículo muy largo sobre cómo guardar cosas para leer más tarde"
@@ -19,8 +17,6 @@ def test_short_titles_are_unchanged_with_the_flag(monkeypatch):
     assert display_title("Corto") == "Corto"
 
 
-def test_long_titles_fail_with_the_flag(monkeypatch):
-    # El bug de la demo (#19): la respuesta de guardia lo encuentra y lo arregla.
+def test_long_titles_keep_the_last_word_with_the_flag(monkeypatch):
     monkeypatch.setenv("BUG_SAVE_ITEM", "1")
-    with pytest.raises(IndexError):
-        display_title(LONG)
+    assert display_title(LONG) == LONG[:40].rstrip() + "… " + LONG.split()[-1]

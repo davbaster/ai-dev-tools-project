@@ -78,7 +78,7 @@ def display_title(title: str) -> str:
     if not short_titles_enabled() or len(title) <= SHORT_TITLE_CHARS:
         return title
     words = title.split()
-    return title[:SHORT_TITLE_CHARS].rstrip() + "… " + words[len(words)]
+    return title[:SHORT_TITLE_CHARS].rstrip() + "… " + words[-1]
 
 
 def item_out(item: Item, category_name: str) -> ItemOut:
