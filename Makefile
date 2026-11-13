@@ -2,7 +2,7 @@
 # Compatible with GNU Make 3.81 (no .ONESHELL or newer features).
 
 .DEFAULT_GOAL := help
-.PHONY: help install dev-backend dev-frontend lint format security ci-local mcp mcp-audit responder-logs test test-unit test-frontend test-contract test-integration migrate build up down logs image push-image wait-image retag promoted-sha deploy-hooks deploy-dev deploy-prod wait-deploy rollback promote-prod
+.PHONY: help install dev-backend dev-frontend lint format security ci-local mcp mcp-audit responder-logs demo-on demo-off test test-unit test-frontend test-contract test-integration migrate build up down logs image push-image wait-image retag promoted-sha deploy-hooks deploy-dev deploy-prod wait-deploy rollback promote-prod
 
 help: ## List every target
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  %-17s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -68,6 +68,14 @@ MCP_LOCAL_ENV = LOKI_URL=http://127.0.0.1:3100 PROMETHEUS_URL=http://127.0.0.1:9
 
 mcp: ## Run the MCP server locally on 127.0.0.1:8090 (needs MCP_TOKEN; `make up` runs it in Docker)
 	$(MCP_LOCAL_ENV) MCP_HOST=127.0.0.1 MCP_AUDIT_LOG=$${MCP_AUDIT_LOG:-.mcp-audit.jsonl} uv run python -m oncall.mcp_server.server
+
+demo-on: ## Restart the backend with the demo bug on (BUG_SAVE_ITEM=1, #19; see _docs/demo.md)
+	BUG_SAVE_ITEM=1 docker compose up -d --no-deps --wait backend
+	@echo "Demo bug ON: save a title longer than 40 characters at http://localhost:8000 and watch Grafana and the incident issues (_docs/demo.md)."
+
+demo-off: ## Restart the backend with the demo bug off (BUG_SAVE_ITEM=0)
+	BUG_SAVE_ITEM=0 docker compose up -d --no-deps --wait backend
+	@echo "Demo bug OFF. If the responder enabled pushing for the demo, set RESPONDER_ALLOW_PUSH=false in .env and run make up."
 
 responder-logs: ## Follow the on-call responder's logs (Ctrl+C to stop)
 	docker compose logs -f oncall-agent

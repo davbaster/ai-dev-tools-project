@@ -14,9 +14,11 @@ from pydantic import BaseModel, StringConstraints, field_validator
 from sqlalchemy import select
 
 from backend.auth import DB, CurrentToken
+from backend.config import short_titles_enabled
 from backend.models import Category, Item
 
 URL_MAX_LENGTH = 2048
+SHORT_TITLE_CHARS = 40
 NOT_YOUR_CATEGORY = "Elegí una de tus categorías."
 CATEGORY_NOT_FOUND = "No existe esa categoría."
 ITEM_NOT_FOUND = "No existe ese item."
@@ -71,6 +73,14 @@ def own_category(db, user_id: int, category_id: int) -> Category | None:
     return category
 
 
+def display_title(title: str) -> str:
+    """The title as stored: long titles are shortened, keeping the last word."""
+    if not short_titles_enabled() or len(title) <= SHORT_TITLE_CHARS:
+        return title
+    words = title.split()
+    return title[:SHORT_TITLE_CHARS].rstrip() + "… " + words[len(words)]
+
+
 def item_out(item: Item, category_name: str) -> ItemOut:
     return ItemOut(
         id=item.id,
@@ -98,7 +108,7 @@ def create_item(body: ItemCreate, token: CurrentToken, db: DB) -> ItemOut:
         user_id=token.user_id,
         category_id=category.id,
         url=body.url,
-        title=body.title or body.url,
+        title=display_title(body.title or body.url),
         note=body.note or None,
     )
     db.add(item)

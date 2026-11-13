@@ -171,3 +171,18 @@ def test_items_need_a_token(api):
         == 401
     )
     assert api.delete("/api/items/1").status_code == 401
+
+
+def test_long_title_is_saved_with_the_demo_flag_off(api, monkeypatch):
+    monkeypatch.delenv("BUG_SAVE_ITEM", raising=False)
+    ana = signup(api, "ana")
+    title = "Título largo " * 9  # ~120 caracteres
+    created = save(
+        api,
+        ana,
+        url="https://example.com/largo",
+        title=title,
+        category_id=category_ids(api, ana)["Leer"],
+    )
+    assert created.status_code == 201
+    assert created.json()["title"] == title.strip()

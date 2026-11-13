@@ -154,3 +154,5 @@ Added after the seed (issue numbers 21 and 22 are PRs):
 2. Locally: `make up`, open Grafana, show the save-item trace with its logs and metrics.
 3. Turn on the demo bug, save a long title, watch the alert fire, the incident open, and the responder push a fix to `main`.
 4. CI passes, CD deploys to dev, the alert resolves. Merge the responder's PR from `main` to `prod` to release.
+
+Step by step, with timings and how to re-arm the bug: `_docs/demo.md` (#19).
