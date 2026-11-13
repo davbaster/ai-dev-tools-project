@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-13, by the orchestrator session (#19 groomed, waiting for David's review)
+**Last updated:** 2026-11-13, by the orchestrator session (#19: PR #64 green CI + pre-merge QA, waiting for David's OK)
 
 ## Current state
 
@@ -36,11 +36,12 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 
 ## In progress
 
-- #19 (demo bug + end-to-end demo): **groomed** by the PM (label `groomed`), waiting for David's review and his OK for the responder to push one real fix to `main` during the QA (= the demo). Design: `BUG_SAVE_ITEM=1` makes backend `POST /api/items` raise `IndexError` (500) on titles over 40 characters, in `backend/items.py`; `make demo-on` / `make demo-off`; `_docs/demo.md` with the full script and timings; the fix is single-use (re-arm by reverting the fix through a PR); the alert resolves after `git pull` + `make up`.
+- #19 (demo bug + demo): approved by David (including one real responder push to `main` in the QA). Implemented on `19-demo-bug`, **PR #64** (`Refs #19`), CI green, pre-merge `## QA: PASS` on #19. **Waiting for David's OK to merge**; the live demo (= final QA) runs after the merge because the bug must be on `main`.
+- Adds `display_title()` in `backend/items.py` (bug behind `BUG_SAVE_ITEM=1`: `IndexError` for titles over 40 characters), `make demo-on` / `make demo-off`, `_docs/demo.md`.
 
 ## Next up
 
-1. David reviews #19. On approval: branch `19-demo-bug`, PR, CI, merge; then the live demo as QA (push to `main` enabled in David's `.env`, back to off afterwards).
+1. David's OK → merge PR #64 → CI/CD → the live demo: `.env` with `RESPONDER_ALLOW_PUSH=true`, `RESPONDER_TARGET_BRANCH=main`, `make up`, `make demo-on`, long titles → incident → responder pushes the fix to `main` → CI/CD → prod PR → `git pull` + `BUG_SAVE_ITEM=1 make up` → resolved/closed; then push back to `false`, final `## QA` on #19.
 2. #20 (README), then #18 (admin panel; scope with David). Deadline today, Friday 2026-11-13.
 - Follow-ups in backlog: #26, #28-#30, #33, #42, #43 (dev DB expires 2026-12-08), #62, #63.
 
