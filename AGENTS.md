@@ -22,6 +22,7 @@ It is a course final project and a **proof of concept**: keep everything simple,
 
 | File | Read it when |
 |---|---|
+| `README.md` | The entry point for humans (and reviewers): what the project is, how to run, test, deploy and demo it. Keep it in sync when a part changes. |
 | `HANDOFF.md` | Always, first. **Update it after every decision and every finished piece of work**, and before ending a session, so another session or another LLM can continue without context. |
 | `_docs/log/YYYY-MM-DD.md` | Always. Append an entry after each finished piece of work, each decision and each task switch (create today's file if missing). Every entry has four headings: What was done, Decisions made (and why), Open threads, Errors. Keep entries factual. |
 | `_docs/plan.md` | Before any task. Scope, architecture, demo scenario. |
