@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-12, by the orchestrator session (#16 closed: MCP server merged)
+**Last updated:** 2026-11-12, by the orchestrator session (#17 groomed, waiting for David's review and decisions)
 
 ## Current state
 
@@ -35,12 +35,12 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 
 ## In progress
 
-- Nothing.
+- #17 (on-call responder): **groomed** by the PM (label `groomed`), waiting for David's review and four decisions: (1) LLM through an OpenAI-compatible API with `httpx`, no new dependency, David provides `LLM_API_KEY` (model `gpt-6-luna`); (2) a fine-grained `GITHUB_TOKEN` for this repo (Contents, Issues, PRs read/write; no Workflows); (3) checks before push (ruff + unit/frontend/contract) in a Dockerfile target with dev deps, on a temp copy; commits through the GitHub API; (4) `RESPONDER_ALLOW_PUSH=false` by default, `RESPONDER_TARGET_BRANCH` for QA. Design: Compose `oncall-agent` at `127.0.0.1:8080/alerts` (bearer `ALERT_WEBHOOK_TOKEN`), one incident per alertname, LLM loop with the 4 MCP tools + `propose_fix` + `escalate` (20 steps / 10 min), fix → commit `Fixes #n` + PR `main` → `prod`, or `needs-human`.
 
 ## Next up
 
-1. Groom #17 (responder): receives the #15 webhook at `http://oncall-agent:8080/alerts` (bearer `ALERT_WEBHOOK_TOKEN`; payload in `observability/README.md`), opens the `incident` issue, investigates through the MCP server (`http://mcp-server:8090/mcp`, bearer `MCP_TOKEN`; `oncall/mcp_server/README.md`), pushes a fix to `main` + PR to `prod` (`make promote-prod`) or labels `needs-human`. Decisions for David: LLM (`LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`, default `gpt-6-luna`), a client library (dependency), and GitHub access for the agent (token scope, how it pushes to `main`).
-2. Then #18 (admin panel), #19 (demo bug), #20 (README). #43 before 2026-12-08.
+1. David reviews #17 and decides. QA needs his `LLM_API_KEY` and `GITHUB_TOKEN` in the local `.env`.
+2. Then #18 (admin panel + cloud responder), #19 (demo bug + end-to-end demo), #20 (README). #43 before 2026-12-08.
 - Deadline Friday 2026-11-13 (Costa Rica). Don't push to `main` while waiting for services to sleep.
 
 ## Decisions
