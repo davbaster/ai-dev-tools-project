@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-12, by the orchestrator session (#15 closed: alerts + webhook merged)
+**Last updated:** 2026-11-12, by the orchestrator session (#16 groomed, waiting for David's review and dependency OK)
 
 ## Current state
 
@@ -34,13 +34,12 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 
 ## In progress
 
-- Nothing.
+- #16 (MCP server): **groomed** by the PM (label `groomed`), waiting for David's review and his OK on the `mcp` SDK dependency (2.3.0; brings httpx2, pydantic, starlette, sse-starlette, jsonschema, python-multipart, pyjwt[crypto], pywin32 on Windows). Design: `oncall/mcp_server/`, Streamable HTTP at `127.0.0.1:8090/mcp` (Compose `mcp-server`), bearer `MCP_TOKEN`; read-only tools `get_recent_logs` (Loki, escaped LogQL), `query_metrics` (Prometheus read API, ≤ 50 series), `check_health` (local/dev/prod GETs), `read_source_file` (repo read-only, path guard, allowlist); redaction of every result and audit entry; audit log JSON lines in a volume + stdout; `make mcp`, `make mcp-audit`.
 
 ## Next up
 
-1. Groom #16 (MCP server with the on-call tools `get_recent_logs`, `query_metrics`, `check_health`, `read_source_file`; redaction; audit log). It reads Loki (`{service_name=...}`), Prometheus and the health endpoints from #13/#14 (`observability/README.md`).
-2. #17 (responder): receives the #15 webhook at `http://oncall-agent:8080/alerts` with `Authorization: Bearer $ALERT_WEBHOOK_TOKEN`; payload in `observability/README.md`.
-3. Then #18 (admin panel), #19 (demo bug), #20 (README). #43 before 2026-12-08.
+1. David reviews #16 and decides on `mcp`. On approval: branch `16-mcp-server`, PR, CI, local live QA, merge with David's OK.
+2. #17 (responder) uses these tools and the #15 webhook. Then #18, #19, #20. #43 before 2026-12-08.
 - Deadline Friday 2026-11-13 (Costa Rica). Don't push to `main` while waiting for services to sleep.
 
 ## Decisions
