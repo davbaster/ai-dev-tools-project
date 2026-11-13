@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-12, by the orchestrator session (#14 closed: local observability stack merged)
+**Last updated:** 2026-11-12, by the orchestrator session (#15 groomed, waiting for David's review)
 
 ## Current state
 
@@ -33,12 +33,12 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 
 ## In progress
 
-- Nothing.
+- #15 (alerts + webhook): **groomed** by the PM (label `groomed`), waiting for David's review. Proposal: Grafana unified alerting provisioned from `observability/grafana/provisioning/alerting/`; SaveItemFailing and HighServerErrors (> 5% 5xx over 5 min, evaluated every 30 s, pending 1 min, no data = OK) with the dashboard's expressions; contact point posting Grafana's webhook JSON to `ALERT_WEBHOOK_URL` (default `http://oncall-agent:8080/alerts`, #17) with `Authorization: Bearer $ALERT_WEBHOOK_TOKEN`; firing and resolved; alert list panel; QA fires them by stopping Postgres with a throwaway receiver on the host.
 
 ## Next up
 
-1. Groom #15 (alert rules on user impact + webhook to the responder). The dashboard's two error panels hold the expressions (`observability/grafana/dashboards/para-luego.json`): SaveItemFailing (backend `POST /api/items` 5xx share > 5% over 5 min) and HighServerErrors (5xx share > 5% over 5 min). The responder (#17) doesn't exist yet, so the webhook target needs a decision.
-2. Then #16 (MCP server), #17 (responder), #18 (admin panel), #19 (demo bug), #20 (README). #43 before 2026-12-08.
+1. David reviews #15. On approval: branch `15-alerts`, PR, CI, local live QA, merge with David's OK.
+2. Then #16 (MCP server), #17 (responder, implements the webhook from #15), #18 (admin panel), #19 (demo bug), #20 (README). #43 before 2026-12-08.
 - Deadline Friday 2026-11-13 (Costa Rica). Don't push to `main` while waiting for services to sleep.
 
 ## Decisions
