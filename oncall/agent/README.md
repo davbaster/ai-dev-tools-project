@@ -33,6 +33,18 @@ Everything posted to GitHub (titles, comments, commit messages, diffs) goes thro
 
 The container is the Dockerfile's `agent` target (runtime plus ruff and pytest), with the repo mounted read-only at `/repo`.
 
+## Local mode, replay and recording (#69)
+
+`make demo-local` runs the responder with these settings (from `docker-compose.demo.yml`):
+
+| Variable | Meaning |
+|---|---|
+| `RESPONDER_MODE` | `github` (default) or `local`. Local: incidents, comments and labels go to `DEMO_OUTPUT/incident-<n>.md` (+ `incidents.json`); the fix is written into the workspace (`REPO_ROOT`) with its diff in `fix-<n>.diff`; the "prod PR" is the draft `prod-pr-<n>.md`. No GitHub call, even with a `GITHUB_TOKEN`. |
+| `RESPONDER_ONLY_ALERTS` | Comma-separated alert names to handle; empty = all. The demo uses `SaveItemFailing` (#62). |
+| `RESPONDER_REPLAY` | Without `LLM_API_KEY`, replay the assistant messages of this recorded run (`replays/demo_bug.json`); the incident says so, and a recorded step that no longer applies escalates as "replay out of date". |
+| `RESPONDER_RECORD` | With `LLM_API_KEY`, save the run's assistant messages (redacted) to this file. |
+| `DEMO_OUTPUT` | Where local mode writes (`/demo-output`). |
+
 ## Try it
 
 - Logs: `make responder-logs` (JSON, with `incident` and `alertname`; never tokens).

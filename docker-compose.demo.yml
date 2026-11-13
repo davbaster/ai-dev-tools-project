@@ -1,0 +1,37 @@
+# Local demo for reviewers (#69): `make demo-local`. Used on top of
+# docker-compose.yml, never alone. The backend, the MCP server and the responder
+# run the throwaway workspace (.demo/workspace, a git worktree with the demo bug),
+# so main and your working tree never change. The responder runs in local mode:
+# incidents, the fix and the draft prod PR are files in demo-output/; no GitHub,
+# no push, no deploy.
+
+services:
+  backend:
+    build:
+      context: .demo/workspace
+      target: app
+    image: para-luego-demo-app
+    environment:
+      BUG_SAVE_ITEM: "1"
+
+  mcp-server:
+    volumes:
+      - ./.demo/workspace:/repo:ro
+
+  oncall-agent:
+    # Escribe el arreglo en el workspace montado: con root funciona igual en
+    # Linux (dueño = tu usuario) y en Docker Desktop. Solo en la demo.
+    user: "0"
+    volumes:
+      - ./.demo/workspace:/repo
+      - ./demo-output:/demo-output
+    environment:
+      RESPONDER_MODE: local
+      RESPONDER_ALLOW_PUSH: "true"
+      RESPONDER_TARGET_BRANCH: main
+      # Un mismo bug también dispara HighServerErrors (#62): la demo sigue SaveItemFailing.
+      RESPONDER_ONLY_ALERTS: SaveItemFailing
+      RESPONDER_REPLAY: /app/oncall/agent/replays/demo_bug.json
+      RESPONDER_RECORD: ${RESPONDER_RECORD:-}
+      DEMO_OUTPUT: /demo-output
+      GITHUB_TOKEN: ""
