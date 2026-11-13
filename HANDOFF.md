@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-12, by the orchestrator session (#14: PR #48 green CI + QA PASS, waiting for David's OK)
+**Last updated:** 2026-11-12, by the orchestrator session (#14 closed: local observability stack merged)
 
 ## Current state
 
@@ -27,19 +27,18 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 - #11 (Render + CD to dev): approved by David (dev on Render's free Postgres, prod on Neon in #12), PRs #39 (blueprint + CD), #40 (frontend retries) and #41 (the browser wakes the backend) merged with green CI and David's OK. **QA: PASS**, #11 closed. Dev: frontend https://para-luego-dev-frontend.onrender.com, backend https://para-luego-dev-backend.onrender.com; every green push to `main` deploys there (`cd-dev.yml`). Free-plan lesson: calls from one Render service never wake a sleeping free service, so the browser wakes the backend (`BACKEND_PUBLIC_URL`, `_wake.html`). See `_docs/deploy.md`. **Dev database expires 2026-12-08.**
 - #12 (prod deploy, rollback, promote-prod): approved by David, PRs #44 and #45 merged with green CI and David's OK; first release PR #46 merged by David. **QA: PASS**, #12 closed. **Prod:** frontend https://para-luego-prod-frontend.onrender.com, backend https://para-luego-prod-backend.onrender.com, database on Neon free; Blueprint `render.prod.yaml` on branch `prod`. Release: `make promote-prod` → David merges with **Create a merge commit** → Deploy prod deploys the image dev ran. Rollback: the Rollback workflow or `make rollback ENV TAG`. `prod` is protected (PR + CI check); `main` isn't. QA test users: `qa12proda2d876` (prod), `qa12deva2d876` (dev). Follow-ups #42 (rollback across migrations), #43 (dev database expiry).
 - #13 (OpenTelemetry + JSON logs): approved by David with six OpenTelemetry dependencies, PR #47 merged with green CI and David's OK. **QA: PASS**, #13 closed. Shared `telemetry/` package; one trace frontend → backend → DB; JSON logs with trace ids on dev (checked in Render's logs: frontend `POST /items` and backend `item saved` share the trace id). No export on Render (no `OTEL_EXPORTER_OTLP_ENDPOINT`). Test user `qa13devac633c` on dev.
+- #14 (local observability): approved by David, PR #48 merged with green CI and David's OK. **QA: PASS**, #14 closed. `make up` also runs the OTel Collector, Prometheus, Tempo, Loki and Grafana (http://localhost:3000, dashboard "Para Luego"); see `observability/README.md`. Dev on Render unchanged (reports `b426e20`).
 - `/` now calls `getMe` and then `getDaily`; frontend test fakes that serve `/` must answer `/api/daily`.
 - Deadline: **Friday 2026-11-13** (Costa Rica time). Peer reviews of three other projects are also required to pass.
 
 ## In progress
 
-- #14 (observability stack): approved by David (logs via the collector's `file_log` receiver). Implemented on `14-observability`, **PR #48** (`Closes #14`), CI green, **`## QA: PASS`** on #14 (all criteria are local and were checked live). **Waiting for David's OK to merge.**
-- Adds Compose services `otel-collector`, `prometheus`, `tempo`, `loki`, `grafana` (pinned; UIs on 127.0.0.1), `observability/` configs + Grafana provisioning + "Para Luego" dashboard, `observability/README.md`. Small app change: duration histogram buckets in seconds (the p95 was wrong with OTel's ms defaults).
+- Nothing.
 
 ## Next up
 
-1. David's OK → merge PR #48 (CD to dev changes nothing visible: Render exports nothing).
-2. #15 (alert rules on user impact + webhook to the responder): the dashboard's two error panels already hold the expressions (`observability/grafana/dashboards/para-luego.json`).
-3. Then #16 (MCP server), #17 (responder), #18 (admin panel), #19 (demo bug), #20 (README). #43 before 2026-12-08.
+1. Groom #15 (alert rules on user impact + webhook to the responder). The dashboard's two error panels hold the expressions (`observability/grafana/dashboards/para-luego.json`): SaveItemFailing (backend `POST /api/items` 5xx share > 5% over 5 min) and HighServerErrors (5xx share > 5% over 5 min). The responder (#17) doesn't exist yet, so the webhook target needs a decision.
+2. Then #16 (MCP server), #17 (responder), #18 (admin panel), #19 (demo bug), #20 (README). #43 before 2026-12-08.
 - Deadline Friday 2026-11-13 (Costa Rica). Don't push to `main` while waiting for services to sleep.
 
 ## Decisions
