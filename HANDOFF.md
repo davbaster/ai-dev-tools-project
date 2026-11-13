@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-12, by the orchestrator session (#15: PR #49 green CI + QA PASS, waiting for David's OK)
+**Last updated:** 2026-11-12, by the orchestrator session (#15 closed: alerts + webhook merged)
 
 ## Current state
 
@@ -28,18 +28,19 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 - #12 (prod deploy, rollback, promote-prod): approved by David, PRs #44 and #45 merged with green CI and David's OK; first release PR #46 merged by David. **QA: PASS**, #12 closed. **Prod:** frontend https://para-luego-prod-frontend.onrender.com, backend https://para-luego-prod-backend.onrender.com, database on Neon free; Blueprint `render.prod.yaml` on branch `prod`. Release: `make promote-prod` → David merges with **Create a merge commit** → Deploy prod deploys the image dev ran. Rollback: the Rollback workflow or `make rollback ENV TAG`. `prod` is protected (PR + CI check); `main` isn't. QA test users: `qa12proda2d876` (prod), `qa12deva2d876` (dev). Follow-ups #42 (rollback across migrations), #43 (dev database expiry).
 - #13 (OpenTelemetry + JSON logs): approved by David with six OpenTelemetry dependencies, PR #47 merged with green CI and David's OK. **QA: PASS**, #13 closed. Shared `telemetry/` package; one trace frontend → backend → DB; JSON logs with trace ids on dev (checked in Render's logs: frontend `POST /items` and backend `item saved` share the trace id). No export on Render (no `OTEL_EXPORTER_OTLP_ENDPOINT`). Test user `qa13devac633c` on dev.
 - #14 (local observability): approved by David, PR #48 merged with green CI and David's OK. **QA: PASS**, #14 closed. `make up` also runs the OTel Collector, Prometheus, Tempo, Loki and Grafana (http://localhost:3000, dashboard "Para Luego"); see `observability/README.md`. Dev on Render unchanged (reports `b426e20`).
+- #15 (alerts + webhook): approved by David, PR #49 merged with green CI and David's OK. **QA: PASS**, #15 closed. Grafana rules SaveItemFailing and HighServerErrors; webhook to `ALERT_WEBHOOK_URL` (default `http://oncall-agent:8080/alerts`) with a bearer token; payload and how to trigger them in `observability/README.md`. Dev reports `2a880c1`.
 - `/` now calls `getMe` and then `getDaily`; frontend test fakes that serve `/` must answer `/api/daily`.
 - Deadline: **Friday 2026-11-13** (Costa Rica time). Peer reviews of three other projects are also required to pass.
 
 ## In progress
 
-- #15 (alerts + webhook): approved by David. Implemented on `15-alerts`, **PR #49** (`Closes #15`), CI green, **`## QA: PASS`** on #15 (local live QA: fire by stopping Postgres, resolve, unreachable webhook). **Waiting for David's OK to merge.**
-- Adds `observability/grafana/provisioning/alerting/` (SaveItemFailing, HighServerErrors; contact point to `ALERT_WEBHOOK_URL` with `Authorization: Bearer $ALERT_WEBHOOK_TOKEN`), alert list panel, README with the webhook payload for #17.
+- Nothing.
 
 ## Next up
 
-1. David's OK → merge PR #49.
-2. #16 (MCP server: `get_recent_logs`, `query_metrics`, `check_health`, `read_source_file`, redaction, audit log) and #17 (responder: receives the #15 webhook at `http://oncall-agent:8080/alerts`, checks the bearer token). Then #18 (admin panel), #19 (demo bug), #20 (README). #43 before 2026-12-08.
+1. Groom #16 (MCP server with the on-call tools `get_recent_logs`, `query_metrics`, `check_health`, `read_source_file`; redaction; audit log). It reads Loki (`{service_name=...}`), Prometheus and the health endpoints from #13/#14 (`observability/README.md`).
+2. #17 (responder): receives the #15 webhook at `http://oncall-agent:8080/alerts` with `Authorization: Bearer $ALERT_WEBHOOK_TOKEN`; payload in `observability/README.md`.
+3. Then #18 (admin panel), #19 (demo bug), #20 (README). #43 before 2026-12-08.
 - Deadline Friday 2026-11-13 (Costa Rica). Don't push to `main` while waiting for services to sleep.
 
 ## Decisions
