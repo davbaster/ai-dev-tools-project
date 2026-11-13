@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-13, by the orchestrator session (#20: PR #68 green CI + QA PASS, waiting for David's OK)
+**Last updated:** 2026-11-13, by the orchestrator session (#20 closed: README merged)
 
 ## Current state
 
@@ -32,20 +32,20 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 - #16 (MCP server): approved by David with `mcp`, PR #50 merged with green CI and David's OK. **QA: PASS**, #16 closed. `make up` runs `mcp-server` at http://127.0.0.1:8090/mcp (bearer `MCP_TOKEN`) with four read-only tools, redaction and an audit log (`make mcp-audit`); see `oncall/mcp_server/README.md`. Dev reports `2b909c5`.
 - #17 (on-call responder): approved by David, PR #51 merged with green CI and David's OK. **QA: PASS** (live, with David's keys), #17 closed. `make up` runs `oncall-agent` (127.0.0.1:8080): Grafana webhook → `incident` issue → LLM investigation with the MCP tools → fix commit `Fixes #n` + prod PR, or `needs-human`. Push is off by default (`RESPONDER_ALLOW_PUSH`). See `oncall/agent/README.md`. Dev reports `5e5d035`.
 - #19 (demo bug + demo): PR #64 merged with green CI and David's OK. **QA: PASS** with the live demo: `make demo-on` → incidents #65/#66 → responder pushed the fix to `main` (`c3a3adf`, `d4e7041`) → CI/CD to dev → prod PR #67 → local backend with the fix → alert resolved. #19 closed. Script: `_docs/demo.md`.
+- #20 (README): PR #68 merged with green CI and David's OK. **QA: PASS**, #20 closed. Root `README.md` is the entry point for reviewers. Dev reports `233e7b5`.
 - `/` now calls `getMe` and then `getDaily`; frontend test fakes that serve `/` must answer `/api/daily`.
 - Deadline: **Friday 2026-11-13** (Costa Rica time). Peer reviews of three other projects are also required to pass.
 
 ## In progress
 
-- #20 (README): approved by David. Implemented on `20-readme`, **PR #68** (`Closes #20`), CI green, **`## QA: PASS`** on #20 (links, URLs, commands, ports, rendered Mermaid). **Waiting for David's OK to merge.**
-- Prod PR #67 (the responder's fix from the demo) waiting for David's decision.
+- Nothing running. **Prod PR #67** (Release: main to prod; now carries everything on `main` up to `233e7b5`, including the demo fix and the README) is open, CI green, waiting for David to merge with **Create a merge commit**.
 
 ## Next up
 
 Deadline today, Friday 2026-11-13.
-1. David's OK → merge PR #68.
-2. Demo polish (proposed): `Refs #n` in the responder's fix commits, "fix pushed" state from the incident's comments, `_docs/demo.md` rebuilds only the backend.
-3. #18 admin panel (scope down with David, or leave; the README lists it as not built).
+1. David: merge prod PR #67 if he wants prod on the latest `main`.
+2. Demo polish (proposed, small): `Refs #n` in the responder's fix commits, "fix pushed" state from the incident's comments, `_docs/demo.md` rebuilds only the backend.
+3. #18 admin panel + cloud demo mode (largest remaining; the README lists it as not built).
 - The demo bug is fixed on `main` (`d4e7041`); re-arm with a revert PR before the next demo.
 - Follow-ups in backlog: #26, #28-#30, #33, #42, #43 (dev DB expires 2026-12-08), #62, #63.
 
