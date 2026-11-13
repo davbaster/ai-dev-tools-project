@@ -7,6 +7,7 @@ import asyncio
 import hmac
 import logging
 import os
+from pathlib import Path
 
 import uvicorn
 from fastapi import FastAPI, Request
@@ -15,7 +16,8 @@ from fastapi.responses import JSONResponse
 import telemetry
 from oncall.agent.config import load_config
 from oncall.agent.github import GitHub
-from oncall.agent.llm import LLM
+from oncall.agent.llm import LLM, RecordingLLM, ReplayLLM
+from oncall.agent.local import LocalTracker
 from oncall.agent.mcp_tools import MCPTools
 from oncall.agent.responder import Responder
 
@@ -67,6 +69,36 @@ def create_app(responder: Responder, webhook_token: str) -> FastAPI:
     return app
 
 
+def build_responder(config, replay: str = "", record: str = "") -> Responder:
+    """The responder for this config: where incidents go and which LLM decides."""
+    if config.mode == "local":
+        # Demo local (#69): incidentes y arreglo como archivos; nunca GitHub.
+        tracker = LocalTracker(config.demo_output, config.repo_root)
+    elif config.github_token:
+        tracker = GitHub(config.github_token, config.github_repository)
+    else:
+        tracker = None
+        log.warning(
+            "GITHUB_TOKEN not set: alerts are logged but no incidents are opened"
+        )
+    llm = LLM(
+        config.llm_base_url,
+        config.llm_api_key,
+        config.llm_model,
+        config.llm_reasoning_effort,
+    )
+    if config.llm_api_key and record:
+        llm = RecordingLLM(llm, Path(record))
+    elif not config.llm_api_key and replay:
+        llm = ReplayLLM(Path(replay))
+        log.warning("LLM_API_KEY not set: investigations replay a recorded run")
+    elif not config.llm_api_key:
+        log.warning(
+            "LLM_API_KEY not set: incidents will be escalated without investigation"
+        )
+    return Responder(config, tracker, llm, MCPTools(config.mcp_url, config.mcp_token))
+
+
 def main() -> None:
     config = load_config()
     telemetry.setup_logging(
@@ -74,30 +106,12 @@ def main() -> None:
         os.environ.get("DEPLOYMENT", "local"),
         os.environ.get("APP_VERSION", "").strip() or "local",
     )
-    github = (
-        GitHub(config.github_token, config.github_repository)
-        if config.github_token
-        else None
-    )
-    if github is None:
-        log.warning(
-            "GITHUB_TOKEN not set: alerts are logged but no incidents are opened"
-        )
-    if not config.llm_api_key:
-        log.warning(
-            "LLM_API_KEY not set: incidents will be escalated without investigation"
-        )
-    responder = Responder(
+    responder = build_responder(
         config,
-        github,
-        LLM(
-            config.llm_base_url,
-            config.llm_api_key,
-            config.llm_model,
-            config.llm_reasoning_effort,
-        ),
-        MCPTools(config.mcp_url, config.mcp_token),
+        replay=os.environ.get("RESPONDER_REPLAY", "").strip(),
+        record=os.environ.get("RESPONDER_RECORD", "").strip(),
     )
+    llm = responder.llm
     log.info(
         "responder ready",
         extra={
@@ -105,6 +119,8 @@ def main() -> None:
                 "allow_push": config.allow_push,
                 "target_branch": config.target_branch,
                 "model": config.llm_model,
+                "mode": config.mode,
+                "llm": type(llm).__name__,
             }
         },
     )

@@ -127,6 +127,8 @@ class Responder:
         self.incidents: dict[str, Incident] = {}
         self._locks: dict[str, asyncio.Lock] = {}
         self.prompt = self._load_prompt()
+        # Una investigación reproducida (#69) lo dice en el incidente.
+        self.investigation_note = getattr(llm, "note", "")
 
     def _load_prompt(self) -> str:
         path = self.config.repo_root / "_docs" / "agents" / "oncall-responder.md"
@@ -143,6 +145,10 @@ class Responder:
             alerts[0].get("labels", {}) if alerts else {}
         )
         alertname = str(labels.get("alertname") or "UnknownAlert")
+        only = getattr(self.config, "only_alerts", frozenset())
+        if only and alertname not in only:
+            log.info("alert ignored", extra={"fields": {"alertname": alertname}})
+            return
         if self.github is None:
             log.warning(
                 "GITHUB_TOKEN not set: alert not turned into an incident",
@@ -177,7 +183,7 @@ class Responder:
             return None
         summary = _first(payload, "annotations", "summary") or alertname
         number = await self.github.create_incident(
-            alertname, summary, _incident_body(payload)
+            alertname, summary, _incident_body(payload, self.investigation_note)
         )
         incident = Incident(number, alertname)
         self.incidents[alertname] = incident
@@ -206,6 +212,8 @@ class Responder:
     # --- investigation -------------------------------------------------------------
 
     async def investigate(self, incident: Incident, payload: dict) -> None:
+        if hasattr(self.llm, "restart"):
+            self.llm.restart()  # una reproducción empieza de nuevo por incidente
         try:
             await asyncio.wait_for(
                 self._loop(incident, payload), self.config.max_seconds
@@ -350,7 +358,13 @@ class Responder:
         sha = await self.github.commit_files(branch, files, message)
         incident.fixed = True
         links = f"Commit `{sha[:7]}` on `{branch}`."
-        if branch == "main":
+        if getattr(self.config, "mode", "github") == "local":
+            pr = await self.github.prod_pr(incident.number)
+            links = (
+                f"Fix written to the demo workspace (`{sha}`); nothing was pushed. "
+                f"Draft release PR for a human to review and merge: `{pr}`."
+            )
+        elif branch == "main":
             pr = await self.github.prod_pr(incident.number)
             links += f" CI runs and, if green, CD deploys it to dev. Prod PR: {pr}"
         else:
@@ -505,10 +519,12 @@ def _alert_digest(payload: dict) -> str:
     return "\n".join(rows) or "- (no alerts in payload)"
 
 
-def _incident_body(payload: dict) -> str:
+def _incident_body(payload: dict, note: str = "") -> str:
     annotations = _first(payload, "annotations") or {}
     return (
-        f"Opened by the on-call responder from a Grafana alert.\n\n"
+        "Opened by the on-call responder from a Grafana alert.\n\n"
+        + (f"**Note:** {note}\n\n" if note else "")
+        + f""
         f"**Summary:** {annotations.get('summary', '-')}\n\n"
         f"**Description:** {annotations.get('description', '-')}\n\n"
         f"**Alerts:**\n{_alert_digest(payload)}\n\n"

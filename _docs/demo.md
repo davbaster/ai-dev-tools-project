@@ -1,4 +1,28 @@
-# Demo script (#19)
+# Demo script (#19, #69)
+
+## Local demo for reviewers (#69)
+
+`make demo-local` runs the incident story on any machine with Docker, uv, git and make, without GitHub, without the owner's keys and without changing anything real. `make demo-local-clean` undoes it.
+
+What happens (the script prints each step):
+
+1. **Workspace:** a git worktree `.demo/workspace` (branch `demo/<time>`) from `HEAD`, with the demo bug from `demo/bug.json` (the `display_title` off-by-one). Your checkout and `main` don't change.
+2. **Stack:** `docker-compose.yml` + `docker-compose.demo.yml`. The backend builds from the workspace with `BUG_SAVE_ITEM=1`; the MCP server and the responder read the workspace. The responder runs with `RESPONDER_MODE=local` and follows SaveItemFailing only (#62).
+3. **Traffic:** a demo user saves long titles every few seconds; the backend answers 500.
+4. **Incident** (~2-3 min): `demo-output/incident-1.md`.
+5. **Fix** (~1 min): the responder writes the fix into the workspace after ruff and the unit, frontend and contract tests pass; `demo-output/fix-1.diff`.
+6. **Draft release:** `demo-output/prod-pr-1.md`, the PR `main` → `prod` a human would review and merge.
+7. **Resolution** (~4-6 min): the backend is rebuilt from the fixed workspace (flag still on), long titles save, the alert resolves and the incident file says closed.
+
+**LLM:** with `LLM_API_KEY` in `.env` the investigation is live. Without it, the responder replays `oncall/agent/replays/demo_bug.json`, a recorded real run: only the model's choices are recorded; the MCP queries, the checks and the fix run for real. The incident says "replayed investigation", and its evidence (trace ids, timestamps) comes from the recording. If the code changed and a recorded step no longer applies, the responder escalates with "replay out of date" instead of guessing. To record again (with a key): `RESPONDER_RECORD=/demo-output/recording.json make demo-local` (in Git Bash prefix `MSYS_NO_PATHCONV=1`, or the path gets rewritten), then copy `demo-output/recording.json` to `oncall/agent/replays/demo_bug.json` and check it with `make test`.
+
+**If it stops:** the script says which step timed out. `make responder-logs` and Grafana (http://localhost:3000) show why. Common causes: Docker not running, ports 8000/3000 taken, or the first build taking long.
+
+---
+
+## Full demo (project owner)
+
+The rest of this page is the demo with GitHub, dev and prod (#19).
 
 The end-to-end demo from `_docs/plan.md` section 12: the app in the cloud, its telemetry locally, and an incident that the on-call responder fixes on its own. About 15 minutes.
 

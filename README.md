@@ -127,12 +127,31 @@ It never merges, deploys or restarts anything. Pushing is off unless `RESPONDER_
 
 ## Demo
 
+### For reviewers: one command, on your machine
+
+```bash
+make demo-local
+```
+
+In ~6-8 minutes, with nothing but Docker, uv, git and make (no accounts, no keys):
+
+1. A throwaway copy of the code gets a bug: saving a title over 40 characters fails.
+2. The script keeps saving long titles; Grafana's **SaveItemFailing** alert fires.
+3. The responder opens an incident (`demo-output/incident-1.md`) and investigates with the MCP tools: logs, metrics, health, source code.
+4. It fixes the code, runs ruff and the tests on a copy, and writes the fix (`demo-output/fix-1.diff`).
+5. The backend is rebuilt with the fix, the alert resolves and the incident closes.
+6. The release step is a **draft PR to prod** (`demo-output/prod-pr-1.md`): in the real flow a human reviews and merges it.
+
+Nothing is pushed, deployed or changed in your checkout. With your own `LLM_API_KEY` in `.env` the investigation is live; without one, the responder replays a recorded real investigation and says so (the tools, checks and fix still run on your machine). `make demo-local-clean` removes everything.
+
+### The full demo (project owner: GitHub, dev and prod)
+
 1. Use the public dev app: register, save items, see the Daily, share with WhatsApp and Copiar.
 2. Locally: `make up`, open Grafana, follow a save from its log line to its trace.
 3. `make demo-on` turns on a flagged bug (titles over 40 characters fail). The alert fires, the responder opens an incident, finds the bug and pushes a fix to `main`.
 4. CI passes, CD deploys to dev, the alert resolves; a human merges the PR `main` → `prod`.
 
-Step by step, with timings: [`_docs/demo.md`](_docs/demo.md).
+Step by step, with timings, for both demos: [`_docs/demo.md`](_docs/demo.md).
 
 ## How it was built
 

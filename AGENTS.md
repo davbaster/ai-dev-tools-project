@@ -82,6 +82,7 @@ The root `Makefile` is the single entry point, and CI calls the same targets. Pl
 - `make mcp` - run the MCP server outside Docker on 127.0.0.1:8090 (needs `MCP_TOKEN`; `make up` already runs it as `mcp-server`)
 - `make mcp-audit` - print the last 50 entries of the MCP server's audit log
 - `make responder-logs` - follow the on-call responder's logs (`oncall-agent`, #17)
+- `make demo-local` / `make demo-local-clean` - the one-command local demo for reviewers (#69): throwaway worktree with the bug, responder in local mode (files in `demo-output/`, no GitHub, no push), live LLM or recorded replay; and its cleanup
 - `make demo-on` / `make demo-off` - restart the backend with the demo bug (`BUG_SAVE_ITEM`) on or off; the full demo is `_docs/demo.md`
 - `make ci-local` - run `.github/workflows/ci.yml` locally with `act` (Docker image `catthehacker/ubuntu:act-latest`; the throwaway test database is reached as `host.docker.internal` through `TEST_DB_HOST`)
 - `make promote-prod` - open the PR from `main` to `prod` with `gh` (production deploys when a human merges it with "Create a merge commit"); prints the open one if it exists
