@@ -15,6 +15,36 @@
   },
   "panels": [
     {
+      "id": 7,
+      "type": "alertlist",
+      "title": "Alerts (SaveItemFailing, HighServerErrors)",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 6
+      },
+      "options": {
+        "viewMode": "list",
+        "groupMode": "default",
+        "maxItems": 10,
+        "sortOrder": 1,
+        "dashboardAlerts": false,
+        "alertName": "",
+        "folder": {
+          "title": "Para Luego"
+        },
+        "stateFilter": {
+          "firing": true,
+          "pending": true,
+          "noData": true,
+          "normal": true,
+          "error": true
+        },
+        "showInstances": true
+      }
+    },
+    {
       "id": 1,
       "type": "timeseries",
       "title": "Requests per second by route and status",
@@ -25,7 +55,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 0,
+        "y": 6,
         "w": 24,
         "h": 8
       },
@@ -68,7 +98,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 8,
+        "y": 14,
         "w": 12,
         "h": 8
       },
@@ -114,7 +144,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 8,
+        "y": 14,
         "w": 12,
         "h": 8
       },
@@ -160,7 +190,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 16,
+        "y": 22,
         "w": 12,
         "h": 8
       },
@@ -203,7 +233,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 16,
+        "y": 22,
         "w": 12,
         "h": 8
       },
@@ -245,7 +275,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 24,
+        "y": 30,
         "w": 24,
         "h": 10
       },

@@ -48,3 +48,45 @@ def test_ui_ports_listen_on_localhost_only():
         ports = compose["services"][name]["ports"]
         assert ports and all(port.startswith("127.0.0.1:") for port in ports), name
     assert "ports" not in compose["services"]["otel-collector"]
+
+
+ALERTING = OBS / "grafana" / "provisioning" / "alerting"
+
+
+def dashboard_exprs() -> dict[str, str]:
+    dashboard = json.loads(
+        (OBS / "grafana" / "dashboards" / "para-luego.json").read_text(encoding="utf-8")
+    )
+    return {
+        panel["title"]: panel["targets"][0]["expr"]
+        for panel in dashboard["panels"]
+        if panel.get("targets")
+    }
+
+
+def test_alert_rules_match_the_dashboard_panels():
+    rules = yaml.safe_load((ALERTING / "rules.yaml").read_text(encoding="utf-8"))
+    by_title = {rule["title"]: rule for rule in rules["groups"][0]["rules"]}
+    assert set(by_title) == {"SaveItemFailing", "HighServerErrors"}
+    panels = dashboard_exprs()
+    expected = {
+        "SaveItemFailing": "Save-item error rate (backend POST /api/items, 5xx share)",
+        "HighServerErrors": "5xx share by service (any route)",
+    }
+    for title, panel in expected.items():
+        rule = by_title[title]
+        query = next(d for d in rule["data"] if d["refId"] == "A")["model"]["expr"]
+        threshold = next(d for d in rule["data"] if d["refId"] == "C")["model"]
+        assert query == panels[panel], title
+        assert threshold["conditions"][0]["evaluator"]["params"] == [0.05]
+        assert rule["for"] == "1m" and rule["noDataState"] == "OK"
+        assert rule["labels"]["severity"] == "page"
+    assert rules["groups"][0]["interval"] == "30s"
+
+
+def test_webhook_comes_from_the_environment():
+    text = (ALERTING / "notifications.yaml").read_text(encoding="utf-8")
+    settings = yaml.safe_load(text)["contactPoints"][0]["receivers"][0]["settings"]
+    assert settings["url"] == "$ALERT_WEBHOOK_URL"
+    assert settings["authorization_scheme"] == "Bearer"
+    assert settings["authorization_credentials"] == "$ALERT_WEBHOOK_TOKEN"

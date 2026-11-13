@@ -1,0 +1,27 @@
+# Where alerts go (#15): one webhook to the on-call responder (#17).
+# ALERT_WEBHOOK_URL and ALERT_WEBHOOK_TOKEN come from the environment (Compose);
+# the responder rejects requests without the bearer token. Firing and resolved
+# both notify.
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: on-call responder
+    receivers:
+      - uid: oncall-webhook
+        type: webhook
+        disableResolveMessage: false
+        settings:
+          url: $ALERT_WEBHOOK_URL
+          httpMethod: POST
+          authorization_scheme: Bearer
+          authorization_credentials: $ALERT_WEBHOOK_TOKEN
+
+policies:
+  - orgId: 1
+    receiver: on-call responder
+    group_by: [alertname]
+    # Sin ruido durante un incidente: un aviso por cambio, repetido cada 4 h.
+    group_wait: 10s
+    group_interval: 1m
+    repeat_interval: 4h

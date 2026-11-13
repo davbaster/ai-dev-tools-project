@@ -86,7 +86,7 @@ Alerts measure what users feel, not CPU:
 - **SaveItemFailing:** error rate of backend `POST /api/items` > 5% over 5 minutes.
 - **HighServerErrors:** 5xx rate on any route > 5% over 5 minutes.
 
-Each alert's webhook goes to the responder.
+Each alert's webhook goes to the responder. Grafana alerting, provisioned from files; evaluated every 30 s, firing after 1 minute, resolved notifications too; webhook to `ALERT_WEBHOOK_URL` with a bearer token (`ALERT_WEBHOOK_TOKEN`). Payload and how to trigger them: `observability/README.md` (#15).
 
 ## 8. On-call responder
 
