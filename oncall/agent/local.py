@@ -78,6 +78,9 @@ class LocalTracker:
         if label == NEEDS_HUMAN_LABEL:
             self._append(number, "Label: **needs-human** (Needs human on-call)")
 
+    async def fix_pushed(self, number: int) -> bool:
+        return (self.output / f"fix-{number}.diff").exists()
+
     async def labels(self, number: int) -> list[str]:
         return next((i["labels"] for i in self._index() if i["number"] == number), [])
 

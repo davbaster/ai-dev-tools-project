@@ -162,3 +162,17 @@ def test_recorded_replay_still_fixes_the_demo_bug(tmp_path):
     assert isinstance(files, dict), files
     assert "words[len(words)]" not in files["backend/items.py"]
     assert "ghp_" not in json.dumps(data) and "Bearer " not in json.dumps(data)
+
+
+def test_local_mode_closes_after_a_restart_when_the_fix_exists(tmp_path, workspace):
+    run(
+        local_responder(
+            tmp_path, workspace, FakeLLM(tool_call("propose_fix", FIX))
+        ).handle_alert(alert())
+    )
+    fresh = local_responder(tmp_path, workspace, FakeLLM())
+    run(fresh.handle_alert(alert("resolved")))
+    assert (
+        json.loads((tmp_path / "out" / "incidents.json").read_text())[0]["state"]
+        == "closed"
+    )

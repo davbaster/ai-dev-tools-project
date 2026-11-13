@@ -69,6 +69,13 @@ class FakeGitHub:
         body = json.loads(request.content) if request.content else {}
         self.calls.append((request.method, path, body))
         assert request.headers["authorization"] == "Bearer gh-token"
+        if request.method == "GET" and path.endswith("/comments"):
+            posted = [
+                {"body": b["body"]}
+                for m, p, b in self.calls
+                if m == "POST" and p == path
+            ]
+            return httpx.Response(200, json=posted)
         if request.method == "GET" and path == "/issues":
             return httpx.Response(200, json=self.open_issues)
         if request.method == "POST" and path == "/issues":
@@ -206,7 +213,7 @@ def test_fix_path_opens_incident_commits_and_opens_prod_pr():
         "tests/unit/test_fix.py",
     }
     commit = gh.posted("POST", "/git/commits")[0]
-    assert commit["message"].endswith("Fixes #7") and commit["parents"] == ["parent"]
+    assert commit["message"].endswith("Refs #7") and commit["parents"] == ["parent"]
     assert gh.posted("PATCH", "/git/refs/heads/main") == [{"sha": "abc1234def"}]
     assert gh.posted("POST", "/pulls")[0]["base"] == "prod"
     report = gh.posted("POST", "/issues/7/comments")[-1]["body"]
@@ -388,3 +395,18 @@ def test_llm_sends_reasoning_effort_only_when_set():
     assert (
         bodies[0]["reasoning_effort"] == "none" and "reasoning_effort" not in bodies[1]
     )
+
+
+def test_resolve_after_a_restart_closes_only_if_a_fix_was_pushed():
+    # GitHub no cierra al pushear (Refs); el responder cierra al resolverse, aun
+    # si se reinició y perdió la memoria: lo sabe por la marca del comentario (#71).
+    gh = FakeGitHub()
+    run(responder(gh, FakeLLM(tool_call("propose_fix", FIX))).handle_alert(alert()))
+    assert (
+        "<!-- oncall:fix-pushed -->"
+        in gh.posted("POST", "/issues/7/comments")[-1]["body"]
+    )
+    fresh = responder(gh, FakeLLM())  # sin memoria del arreglo
+    run(fresh.handle_alert(alert("resolved")))
+    assert gh.posted("PATCH", "/issues/7") == [{"state": "closed"}]
+    assert "after the fix" in gh.posted("POST", "/issues/7/comments")[-1]["body"]
