@@ -1,0 +1,10 @@
+# Dashboards from files (#14); edits in the UI aren't saved back.
+apiVersion: 1
+
+providers:
+  - name: para-luego
+    type: file
+    disableDeletion: true
+    allowUiUpdates: false
+    options:
+      path: /etc/grafana/dashboards

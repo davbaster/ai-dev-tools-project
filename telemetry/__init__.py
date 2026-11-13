@@ -37,6 +37,24 @@ HEALTH_PATHS = ("/health", "/api/health")
 EXCLUDED_URLS = "health$"
 UNMATCHED_ROUTE = "unmatched"
 ACCESS_LOGGER = "access"
+# Límites del histograma de duración, en segundos. Los de OpenTelemetry por
+# defecto (0, 5, 10, 25, ...) son para milisegundos: con segundos, todo caía en
+# el primer tramo y el p95 daba ~4,8 s (encontrado en #14).
+DURATION_BUCKETS_SECONDS = (
+    0.005,
+    0.01,
+    0.025,
+    0.05,
+    0.1,
+    0.25,
+    0.5,
+    1,
+    2.5,
+    5,
+    10,
+    30,
+    60,
+)
 
 # Campos fijos de cada línea de log; los completa setup_logging.
 _fields: dict[str, str] = {
@@ -135,6 +153,7 @@ def request_instruments():
             "http.server.request.duration",
             unit="s",
             description="Time to answer an HTTP request",
+            explicit_bucket_boundaries_advisory=DURATION_BUCKETS_SECONDS,
         )
     return _instruments["requests"], _instruments["duration"]
 

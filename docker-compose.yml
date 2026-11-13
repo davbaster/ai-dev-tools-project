@@ -1,4 +1,4 @@
-# Sistema local completo. Las tareas siguientes agregan sus servicios aquí (#14, #16, #17).
+# Sistema local completo: app, Postgres y observabilidad (#14). #16 y #17 agregan los suyos.
 # Los valores por defecto de Postgres son SOLO para uso local; nunca usarlos en dev/prod.
 name: para-luego
 
@@ -31,6 +31,9 @@ services:
     environment:
       DEPLOYMENT: ${DEPLOYMENT:-local}
       DATABASE_URL: postgresql://${POSTGRES_USER:-para_luego}:${POSTGRES_PASSWORD:-para_luego_local}@db:5432/${POSTGRES_DB:-para_luego}
+      # Trazas y métricas al collector (#13/#14); la app no depende de él.
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_METRIC_EXPORT_INTERVAL: "10000"
     ports:
       - "${BACKEND_PORT:-8001}:8001"
     depends_on:
@@ -49,6 +52,8 @@ services:
     environment:
       DEPLOYMENT: ${DEPLOYMENT:-local}
       BACKEND_URL: http://backend:8001
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_METRIC_EXPORT_INTERVAL: "10000"
     ports:
       - "${FRONTEND_PORT:-8000}:8000"
     # Con el backend detenido, el DNS de Docker tarda ~4 s en fallar y el timeout de
@@ -64,6 +69,68 @@ services:
       interval: 3s
       timeout: 3s
       retries: 20
+
+  # --- Observabilidad local (#14) ---------------------------------------------
+  # Sin volúmenes: los datos se pierden con `make down`. Las UIs escuchan solo en
+  # 127.0.0.1. Configuración en observability/ (ver observability/README.md).
+
+  # Recibe trazas y métricas por OTLP y lee los logs JSON de los contenedores.
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.165.0
+    command: ["--config=/etc/otelcol/config.yaml"]
+    # Los logs de Docker son de root (0640): solo lectura, pero como root.
+    user: "0"
+    volumes:
+      - ./observability/otel-collector.yaml:/etc/otelcol/config.yaml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+
+  prometheus:
+    image: prom/prometheus:v3.16.0
+    command: ["--config.file=/etc/prometheus/prometheus.yaml"]
+    volumes:
+      - ./observability/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
+    ports:
+      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
+
+  tempo:
+    image: grafana/tempo:2.10.10
+    command: ["-config.file=/etc/tempo/tempo.yaml"]
+    volumes:
+      - ./observability/tempo.yaml:/etc/tempo/tempo.yaml:ro
+    ports:
+      - "127.0.0.1:${TEMPO_PORT:-3200}:3200"
+
+  loki:
+    image: grafana/loki:3.6.20
+    command: ["-config.file=/etc/loki/loki.yaml"]
+    volumes:
+      - ./observability/loki.yaml:/etc/loki/loki.yaml:ro
+    ports:
+      - "127.0.0.1:${LOKI_PORT:-3100}:3100"
+
+  grafana:
+    image: grafana/grafana:13.3.1
+    environment:
+      # Solo local: entra sin login como Editor (Explore lo necesita).
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Editor
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin_local_only}
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/dashboards/para-luego.json
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/etc/grafana/dashboards:ro
+    ports:
+      - "127.0.0.1:${GRAFANA_PORT:-3000}:3000"
+    depends_on:
+      - prometheus
+      - tempo
+      - loki
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:3000/api/health || exit 1"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
 
 volumes:
   db-data:

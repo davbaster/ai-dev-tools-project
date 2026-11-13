@@ -71,3 +71,19 @@ def json_logs():
     root.addHandler(handler)
     yield handler.lines
     root.removeHandler(handler)
+
+
+@pytest.fixture
+def histogram_bounds():
+    """Call histogram_bounds(name) for the bucket limits of a recorded histogram."""
+
+    def read(name: str) -> list[float]:
+        data = METRICS.get_metrics_data()
+        for resource_metrics in data.resource_metrics if data else []:
+            for scope in resource_metrics.scope_metrics:
+                for metric in scope.metrics:
+                    if metric.name == name and metric.data.data_points:
+                        return list(metric.data.data_points[0].explicit_bounds)
+        return []
+
+    return read

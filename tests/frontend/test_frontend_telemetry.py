@@ -99,3 +99,10 @@ def test_health_makes_no_span_and_no_access_line(client, spans, json_logs):
     assert client.get("/health").status_code == 200
     assert not [s for s in spans.get_finished_spans() if "health" in s.name]
     assert not [line for line in json_logs if line.get("route") == "/health"]
+
+
+def test_duration_histogram_uses_second_buckets(client, histogram_bounds):
+    # Los límites por defecto de OTel son para ms; con segundos el p95 era falso.
+    client.get("/login")
+    bounds = histogram_bounds("http.server.request.duration")
+    assert bounds[:3] == [0.005, 0.01, 0.025] and bounds[-1] == 60
