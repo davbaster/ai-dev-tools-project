@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-12, by the orchestrator session (#13 closed: OpenTelemetry + JSON logs live on dev)
+**Last updated:** 2026-11-12, by the orchestrator session (#14 groomed, waiting for David's review)
 
 ## Current state
 
@@ -32,13 +32,13 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 
 ## In progress
 
-- Nothing.
+- #14 (observability stack): **groomed** by the PM (label `groomed`), waiting for David's review. Proposal: Compose services `otel-collector`, `prometheus`, `tempo`, `loki`, `grafana` (pinned images, ports on 127.0.0.1); apps get `OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318`; collector → Tempo (traces), `prometheus` exporter scraped by Prometheus (metrics), `filelog` on Docker's json-file logs (read-only mount) → Loki (logs); Grafana provisioned with datasources, trace_id links and a "Para Luego" dashboard. Decisions for David: filelog vs. Alloy for logs; the images.
 
 ## Next up
 
-1. Groom #14 (observability stack in Compose: OTel Collector, Prometheus, Tempo, Loki, Grafana + dashboard). It sets `OTEL_EXPORTER_OTLP_ENDPOINT` for the Compose services and ships the JSON stdout logs to Loki; the metric names are in `_docs/plan.md` section 6.
+1. David reviews #14. On approval: branch `14-observability`, PR, CI, local live QA (dashboard, trace, logs ↔ trace links), merge with David's OK.
 2. Then #15 (alerts), #16 (MCP server), #17 (responder), #18 (admin panel), #19 (demo bug), #20 (README).
-3. #43 before 2026-12-08 (dev database expires).
+3. #43 before 2026-12-08.
 - Deadline Friday 2026-11-13 (Costa Rica). Don't push to `main` while waiting for services to sleep.
 
 ## Decisions
