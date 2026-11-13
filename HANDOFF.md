@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-13, by the orchestrator session (#17 closed: on-call responder merged)
+**Last updated:** 2026-11-13, by the orchestrator session (#19 groomed, waiting for David's review)
 
 ## Current state
 
@@ -36,16 +36,13 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 
 ## In progress
 
-- Nothing.
+- #19 (demo bug + end-to-end demo): **groomed** by the PM (label `groomed`), waiting for David's review and his OK for the responder to push one real fix to `main` during the QA (= the demo). Design: `BUG_SAVE_ITEM=1` makes backend `POST /api/items` raise `IndexError` (500) on titles over 40 characters, in `backend/items.py`; `make demo-on` / `make demo-off`; `_docs/demo.md` with the full script and timings; the fix is single-use (re-arm by reverting the fix through a PR); the alert resolves after `git pull` + `make up`.
 
 ## Next up
 
-Deadline is **today, Friday 2026-11-13** (Costa Rica). Remaining seed issues, in the order that matters for the course:
-1. **#19** (demo bug behind a flag + end-to-end incident demo): plan section 12 step 3-4; the pieces all exist now (alerts #15, MCP #16, responder #17). The responder needs `RESPONDER_ALLOW_PUSH=true` and target `main` for the real demo.
-2. **#20** (README: problem, usage, local run, deploy, demo script): required by the course.
-3. **#18** (admin panel + cloud demo mode): largest remaining piece; consider scoping it down with David.
+1. David reviews #19. On approval: branch `19-demo-bug`, PR, CI, merge; then the live demo as QA (push to `main` enabled in David's `.env`, back to off afterwards).
+2. #20 (README), then #18 (admin panel; scope with David). Deadline today, Friday 2026-11-13.
 - Follow-ups in backlog: #26, #28-#30, #33, #42, #43 (dev DB expires 2026-12-08), #62, #63.
-- Don't push to `main` while waiting for services to sleep.
 
 ## Decisions
 
