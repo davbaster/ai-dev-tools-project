@@ -1,0 +1,40 @@
+# Grafana datasources (#14). `$$` escapes Grafana's own variables from the
+# environment-variable expansion of provisioning files.
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+
+  - name: Tempo
+    uid: tempo
+    type: tempo
+    access: proxy
+    url: http://tempo:3200
+    jsonData:
+      # Desde una span: "Logs for this span" busca en Loki por trace_id.
+      tracesToLogsV2:
+        datasourceUid: loki
+        spanStartTimeShift: "-5m"
+        spanEndTimeShift: "5m"
+        customQuery: true
+        query: '{service_name=~"para-luego-.+"} | trace_id = "$${__trace.traceId}"'
+      serviceMap:
+        datasourceUid: prometheus
+
+  - name: Loki
+    uid: loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    jsonData:
+      # Desde una línea de log: el trace_id abre la traza en Tempo.
+      derivedFields:
+        - name: trace_id
+          datasourceUid: tempo
+          matcherRegex: '"trace_id": "([0-9a-f]{32})"'
+          url: "$${__value.raw}"

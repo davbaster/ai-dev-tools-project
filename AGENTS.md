@@ -22,6 +22,7 @@ It is a course final project and a **proof of concept**: keep everything simple,
 
 | File | Read it when |
 |---|---|
+| `README.md` | The entry point for humans (and reviewers): what the project is, how to run, test, deploy and demo it. Keep it in sync when a part changes. |
 | `HANDOFF.md` | Always, first. **Update it after every decision and every finished piece of work**, and before ending a session, so another session or another LLM can continue without context. |
 | `_docs/log/YYYY-MM-DD.md` | Always. Append an entry after each finished piece of work, each decision and each task switch (create today's file if missing). Every entry has four headings: What was done, Decisions made (and why), Open threads, Errors. Keep entries factual. |
 | `_docs/plan.md` | Before any task. Scope, architecture, demo scenario. |
@@ -30,6 +31,7 @@ It is a course final project and a **proof of concept**: keep everything simple,
 | `_docs/agents/*.md` | When playing that role (PM, engineer, QA, on-call responder). |
 | `_docs/task-template.md` | When writing or grooming an issue. |
 | `_docs/testing-guidelines.md` | Before writing tests. |
+| `_docs/demo.md` | Before running or changing the end-to-end demo (demo bug, incident, responder fix, release). |
 | `_docs/deploy.md` | Before touching `render.yaml`, `render.prod.yaml`, the Dockerfile or the CD/deploy/rollback workflows. How a commit reaches dev and prod, rollback, Render's free-plan limits, one-time manual steps. |
 
 `HANDOFF.md` is the short "where are we" snapshot (overwrite it). The log is the append-only history (never rewrite old entries).
@@ -42,14 +44,15 @@ It is a course final project and a **proof of concept**: keep everything simple,
 | `backend/` | Backend service: FastAPI JSON API under `/api/...`, SQLAlchemy models, auth tokens, status-code counts, error routes, telemetry setup. The only code that touches Postgres. |
 | `frontend/` | Frontend service: FastAPI + Jinja2 pages (including the admin panel), API client for the backend, session cookie, telemetry setup. |
 | `frontend/templates/` | Server-rendered HTML pages. |
+| `telemetry/` | OpenTelemetry and JSON logging shared by both services (imports nothing from either): `setup()` per app, request metrics by route template, access log. |
 | `migrations/` | Alembic migrations (backend). |
 | `tests/unit/` | Fast tests, no database or network. |
 | `tests/integration/` | Tests against a real Postgres (Docker). |
 | `tests/frontend/` | Tests of the rendered pages and user flows, with the backend faked from the contract. |
 | `tests/contract/` | Backend routes and the frontend client checked against `api/openapi.yaml`. |
-| `oncall/agent/` | Responder agent: receives alerts, investigates, pushes a fix to `main` (dev) or escalates. |
-| `oncall/mcp_server/` | MCP server with the on-call tools. |
-| `observability/` | OpenTelemetry Collector, Prometheus, Tempo, Loki and Grafana config (dashboards + alert rules). |
+| `oncall/agent/` | Responder agent (`oncall-agent` in Compose, Dockerfile target `agent`): receives Grafana's webhook, opens the `incident` issue, investigates with the MCP tools through an OpenAI-compatible LLM, pushes a fix to `main` (dev) + prod PR, or labels `needs-human`. `README.md` has the flow and config. |
+| `oncall/mcp_server/` | MCP server with the read-only on-call tools (`get_recent_logs`, `query_metrics`, `check_health`, `read_source_file`), redaction and audit log. `README.md` explains tools, auth and how to connect a client. |
+| `observability/` | OpenTelemetry Collector, Prometheus, Tempo, Loki and Grafana config (dashboards + alert rules). `README.md` explains the data flow and URLs. |
 | `.github/workflows/` | CI, CD to dev (on `main`), deploy to prod (on `prod`), rollback. |
 | `docker-compose.yml` | The full local system. |
 | `render.yaml` / `render.prod.yaml` | Render blueprints: dev (synced from `main`) and prod (synced from `prod`). |
@@ -63,10 +66,10 @@ Some folders don't exist until their backlog task creates them.
 The root `Makefile` is the single entry point, and CI calls the same targets. Plain `make` lists every target. Variables go after the target (`make test-integration TEST_DATABASE_URL=<url>`). A failing command stops `make` with a non-zero exit code.
 
 - `make install` - install dependencies (uv)
-- `make up` / `make down` - start / stop the full local system (frontend, backend, Postgres, observability stack, on-call agent, MCP server)
+- `make up` / `make down` - start / stop the full local system (frontend, backend, Postgres, observability stack, on-call agent, MCP server). Grafana http://localhost:3000 (dashboard "Para Luego"), Prometheus :9090, Tempo :3200, Loki :3100, all on 127.0.0.1 (`observability/README.md`)
 - `make logs` - follow the frontend and backend logs
 - `make lint` - ruff (lint + format check)
-- `make security` - bandit (backend + frontend, medium severity and above) + pip-audit (installed dependencies); an ignored finding goes in `PIP_AUDIT_IGNORE` with its ID and the reason
+- `make security` - bandit (backend, frontend, telemetry and oncall, medium severity and above) + pip-audit (installed dependencies); an ignored finding goes in `PIP_AUDIT_IGNORE` with its ID and the reason
 - `make test` - every suite in order (`test-unit`, `test-frontend`, `test-contract`, `test-integration`), stopping at the first failure; needs Docker
 - `make test-unit` / `make test-frontend` / `make test-contract` - one suite, no Docker needed
 - `make test-integration` - starts a throwaway Postgres (`docker-compose.test.yml`, port 5433, override with `TEST_DB_PORT=<port>`), runs the integration tests and removes it, even when they fail. `TEST_DATABASE_URL=<url>` uses that database instead (never the dev `para_luego` one)
@@ -76,6 +79,11 @@ The root `Makefile` is the single entry point, and CI calls the same targets. Pl
 - `make deploy-prod TAG=<sha>` - the same for prod (`RENDER_PROD_BACKEND_DEPLOY_HOOK`, `RENDER_PROD_FRONTEND_DEPLOY_HOOK`; the Deploy prod workflow only)
 - `make wait-deploy ENV=<dev|prod> TAG=<sha>` - wait until that environment's health checks report that version (`ENV` defaults to `dev`)
 - `make wait-image TAG=<sha>` / `make retag ENV=<dev|prod> TAG=<sha>` / `make promoted-sha REF=<commit>` - deploy helpers: wait for an image on GHCR, move `:dev`/`:prod` to it, find the `main` commit a `prod` merge promotes
+- `make mcp` - run the MCP server outside Docker on 127.0.0.1:8090 (needs `MCP_TOKEN`; `make up` already runs it as `mcp-server`)
+- `make mcp-audit` - print the last 50 entries of the MCP server's audit log
+- `make responder-logs` - follow the on-call responder's logs (`oncall-agent`, #17)
+- `make demo-local` / `make demo-local-clean` - the one-command local demo for reviewers (#69): throwaway worktree with the bug, responder in local mode (files in `demo-output/`, no GitHub, no push), live LLM or recorded replay; and its cleanup
+- `make demo-on` / `make demo-off` - restart the backend with the demo bug (`BUG_SAVE_ITEM`) on or off; the full demo is `_docs/demo.md`
 - `make ci-local` - run `.github/workflows/ci.yml` locally with `act` (Docker image `catthehacker/ubuntu:act-latest`; the throwaway test database is reached as `host.docker.internal` through `TEST_DB_HOST`)
 - `make promote-prod` - open the PR from `main` to `prod` with `gh` (production deploys when a human merges it with "Create a merge commit"); prints the open one if it exists
 - `make rollback ENV=<dev|prod> TAG=<full sha>` - redeploy a previous image (or the **Rollback** workflow); refuses a bad env, SHA, missing image or missing hooks before touching anything

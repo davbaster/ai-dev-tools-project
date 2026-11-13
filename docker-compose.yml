@@ -1,9 +1,11 @@
-# Sistema local completo. Las tareas siguientes agregan sus servicios aquí (#14, #16, #17).
+# Sistema local completo: app, Postgres y observabilidad (#14). #16 y #17 agregan los suyos.
 # Los valores por defecto de Postgres son SOLO para uso local; nunca usarlos en dev/prod.
 name: para-luego
 
 x-app-image: &app-image
-  build: .
+  build:
+    context: .
+    target: app
   image: para-luego-app
 
 services:
@@ -31,6 +33,11 @@ services:
     environment:
       DEPLOYMENT: ${DEPLOYMENT:-local}
       DATABASE_URL: postgresql://${POSTGRES_USER:-para_luego}:${POSTGRES_PASSWORD:-para_luego_local}@db:5432/${POSTGRES_DB:-para_luego}
+      # Trazas y métricas al collector (#13/#14); la app no depende de él.
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      # Bug de la demo (#19): 1 = encendido. `make demo-on` / `make demo-off`.
+      BUG_SAVE_ITEM: ${BUG_SAVE_ITEM:-0}
+      OTEL_METRIC_EXPORT_INTERVAL: "10000"
     ports:
       - "${BACKEND_PORT:-8001}:8001"
     depends_on:
@@ -49,6 +56,8 @@ services:
     environment:
       DEPLOYMENT: ${DEPLOYMENT:-local}
       BACKEND_URL: http://backend:8001
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_METRIC_EXPORT_INTERVAL: "10000"
     ports:
       - "${FRONTEND_PORT:-8000}:8000"
     # Con el backend detenido, el DNS de Docker tarda ~4 s en fallar y el timeout de
@@ -65,5 +74,126 @@ services:
       timeout: 3s
       retries: 20
 
+  # Servidor MCP con las herramientas de guardia (#16): solo lectura, con token.
+  mcp-server:
+    <<: *app-image
+    command: ["python", "-m", "oncall.mcp_server.server"]
+    environment:
+      DEPLOYMENT: ${DEPLOYMENT:-local}
+      MCP_TOKEN: ${MCP_TOKEN:-change_me_local_only}
+      MCP_AUDIT_LOG: /var/log/mcp/audit.jsonl
+      LOKI_URL: http://loki:3100
+      PROMETHEUS_URL: http://prometheus:9090
+      REPO_ROOT: /repo
+    volumes:
+      - .:/repo:ro
+      - mcp-audit:/var/log/mcp
+    ports:
+      - "127.0.0.1:${MCP_PORT:-8090}:8090"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8090/health', timeout=2)"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  # Responder de guardia (#17): recibe el webhook de Grafana (#15), abre el
+  # incidente, investiga con el servidor MCP y pushea un arreglo o pide un humano.
+  # Las claves reales (GITHUB_TOKEN, LLM_API_KEY) van solo en tu .env local.
+  oncall-agent:
+    build:
+      context: .
+      target: agent
+    image: para-luego-agent
+    environment:
+      DEPLOYMENT: ${DEPLOYMENT:-local}
+      ALERT_WEBHOOK_TOKEN: ${ALERT_WEBHOOK_TOKEN:-change_me_local_only}
+      MCP_URL: http://mcp-server:8090/mcp
+      MCP_TOKEN: ${MCP_TOKEN:-change_me_local_only}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      GITHUB_REPOSITORY: ${GITHUB_REPOSITORY:-davbaster/ai-dev-tools-project}
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.openai.com/v1}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-gpt-6-luna}
+      # OpenAI: tools on Chat Completions need "none"; set it empty for other providers.
+      LLM_REASONING_EFFORT: ${LLM_REASONING_EFFORT-none}
+      RESPONDER_ALLOW_PUSH: ${RESPONDER_ALLOW_PUSH:-false}
+      RESPONDER_TARGET_BRANCH: ${RESPONDER_TARGET_BRANCH:-main}
+      REPO_ROOT: /repo
+    volumes:
+      - .:/repo:ro
+    ports:
+      - "127.0.0.1:${RESPONDER_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health', timeout=2)"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  # --- Observabilidad local (#14) ---------------------------------------------
+  # Sin volúmenes: los datos se pierden con `make down`. Las UIs escuchan solo en
+  # 127.0.0.1. Configuración en observability/ (ver observability/README.md).
+
+  # Recibe trazas y métricas por OTLP y lee los logs JSON de los contenedores.
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.165.0
+    command: ["--config=/etc/otelcol/config.yaml"]
+    # Los logs de Docker son de root (0640): solo lectura, pero como root.
+    user: "0"
+    volumes:
+      - ./observability/otel-collector.yaml:/etc/otelcol/config.yaml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+
+  prometheus:
+    image: prom/prometheus:v3.16.0
+    command: ["--config.file=/etc/prometheus/prometheus.yaml"]
+    volumes:
+      - ./observability/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
+    ports:
+      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
+
+  tempo:
+    image: grafana/tempo:2.10.10
+    command: ["-config.file=/etc/tempo/tempo.yaml"]
+    volumes:
+      - ./observability/tempo.yaml:/etc/tempo/tempo.yaml:ro
+    ports:
+      - "127.0.0.1:${TEMPO_PORT:-3200}:3200"
+
+  loki:
+    image: grafana/loki:3.6.20
+    command: ["-config.file=/etc/loki/loki.yaml"]
+    volumes:
+      - ./observability/loki.yaml:/etc/loki/loki.yaml:ro
+    ports:
+      - "127.0.0.1:${LOKI_PORT:-3100}:3100"
+
+  grafana:
+    image: grafana/grafana:13.3.1
+    environment:
+      # Solo local: entra sin login como Editor (Explore lo necesita).
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Editor
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin_local_only}
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/dashboards/para-luego.json
+      # Webhook de las alertas al responder de guardia (#15, #17).
+      ALERT_WEBHOOK_URL: ${ALERT_WEBHOOK_URL:-http://oncall-agent:8080/alerts}
+      ALERT_WEBHOOK_TOKEN: ${ALERT_WEBHOOK_TOKEN:-change_me_local_only}
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/etc/grafana/dashboards:ro
+    ports:
+      - "127.0.0.1:${GRAFANA_PORT:-3000}:3000"
+    depends_on:
+      - prometheus
+      - tempo
+      - loki
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:3000/api/health || exit 1"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+
 volumes:
   db-data:
+  mcp-audit:

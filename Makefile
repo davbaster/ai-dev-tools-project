@@ -2,7 +2,7 @@
 # Compatible with GNU Make 3.81 (no .ONESHELL or newer features).
 
 .DEFAULT_GOAL := help
-.PHONY: help install dev-backend dev-frontend lint format security ci-local test test-unit test-frontend test-contract test-integration migrate build up down logs image push-image wait-image retag promoted-sha deploy-hooks deploy-dev deploy-prod wait-deploy rollback promote-prod
+.PHONY: help install dev-backend dev-frontend lint format security ci-local mcp mcp-audit responder-logs demo-on demo-off demo-local demo-local-clean test test-unit test-frontend test-contract test-integration migrate build up down logs image push-image wait-image retag promoted-sha deploy-hooks deploy-dev deploy-prod wait-deploy rollback promote-prod
 
 help: ## List every target
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  %-17s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -29,7 +29,7 @@ format: ## Format and auto-fix with ruff
 PIP_AUDIT_IGNORE =
 
 security: ## Scan the code with bandit (medium+) and the installed dependencies with pip-audit
-	uv run bandit -r backend frontend -ll -q
+	uv run bandit -r backend frontend telemetry oncall -ll -q
 	uv run pip-audit --skip-editable --progress-spinner off $(PIP_AUDIT_IGNORE)
 
 test: test-unit test-frontend test-contract test-integration ## Run every suite, in order; stops at the first failing one (needs Docker)
@@ -61,6 +61,33 @@ test-integration: ## Run the integration tests on a throwaway Postgres (TEST_DB_
 		$(TEST_DB) down -v; \
 		exit $$status; \
 	fi
+
+# Servidor MCP fuera de Docker: lee Loki, Prometheus y la app publicados en el host.
+MCP_LOCAL_ENV = LOKI_URL=http://127.0.0.1:3100 PROMETHEUS_URL=http://127.0.0.1:9090 REPO_ROOT=. \
+	HEALTH_URLS=local:frontend=http://127.0.0.1:8000/health,local:backend=http://127.0.0.1:8001/api/health
+
+mcp: ## Run the MCP server locally on 127.0.0.1:8090 (needs MCP_TOKEN; `make up` runs it in Docker)
+	$(MCP_LOCAL_ENV) MCP_HOST=127.0.0.1 MCP_AUDIT_LOG=$${MCP_AUDIT_LOG:-.mcp-audit.jsonl} uv run python -m oncall.mcp_server.server
+
+demo-local: ## One-command local demo for reviewers: bug, alert, responder fix, draft prod PR; no GitHub (#69)
+	uv run python demo/demo_local.py run
+
+demo-local-clean: ## Stop the local demo and remove .demo/ and demo-output/
+	uv run python demo/demo_local.py clean
+
+demo-on: ## Restart the backend with the demo bug on (BUG_SAVE_ITEM=1, #19; see _docs/demo.md)
+	BUG_SAVE_ITEM=1 docker compose up -d --no-deps --wait backend
+	@echo "Demo bug ON: save a title longer than 40 characters at http://localhost:8000 and watch Grafana and the incident issues (_docs/demo.md)."
+
+demo-off: ## Restart the backend with the demo bug off (BUG_SAVE_ITEM=0)
+	BUG_SAVE_ITEM=0 docker compose up -d --no-deps --wait backend
+	@echo "Demo bug OFF. If the responder enabled pushing for the demo, set RESPONDER_ALLOW_PUSH=false in .env and run make up."
+
+responder-logs: ## Follow the on-call responder's logs (Ctrl+C to stop)
+	docker compose logs -f oncall-agent
+
+mcp-audit: ## Print the last 50 entries of the MCP server's audit log (Docker)
+	docker compose exec -T mcp-server tail -n 50 /var/log/mcp/audit.jsonl
 
 migrate: ## Apply database migrations to DATABASE_URL
 	uv run alembic upgrade head
@@ -119,7 +146,7 @@ CHECK_IMAGE = docker manifest inspect $(IMAGE):$(TAG) >/dev/null 2>&1 || { echo 
 
 image: ## Build the app image as IMAGE:TAG and IMAGE:dev with APP_VERSION=TAG (TAG=<sha> required)
 	@$(CHECK_TAG)
-	docker build --build-arg APP_VERSION=$(TAG) -t $(IMAGE):$(TAG) -t $(IMAGE):dev .
+	docker build --target app --build-arg APP_VERSION=$(TAG) -t $(IMAGE):$(TAG) -t $(IMAGE):dev .
 
 push-image: ## Push IMAGE:TAG and IMAGE:dev (needs docker login to the registry)
 	@$(CHECK_TAG)

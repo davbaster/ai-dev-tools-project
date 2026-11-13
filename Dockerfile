@@ -1,8 +1,10 @@
 # Imagen única para frontend y backend: Compose y Render eligen el servicio con el comando.
 # Python 3.12, dependencias de runtime desde uv.lock, usuario no root.
+# Etapas: base (común), agent (responder de guardia #17, con dependencias de
+# desarrollo para correr ruff y pytest) y app (la última: la que se despliega).
 FROM ghcr.io/astral-sh/uv:0.11 AS uv
 
-FROM python:3.12-slim
+FROM python:3.12-slim AS base
 
 COPY --from=uv /uv /usr/local/bin/uv
 
@@ -21,10 +23,23 @@ RUN uv sync --locked --no-dev
 
 COPY backend ./backend
 COPY frontend ./frontend
+COPY telemetry ./telemetry
+COPY oncall ./oncall
 COPY alembic.ini ./
 COPY migrations ./migrations
 
-RUN useradd --system --uid 10001 --no-create-home appuser
+# /var/log/mcp: el log de auditoría del servidor MCP (#16), escribible por appuser.
+RUN useradd --system --uid 10001 --no-create-home appuser \
+    && mkdir -p /var/log/mcp && chown appuser /var/log/mcp
+
+# Responder de guardia (#17): suma ruff y pytest para revisar un arreglo antes de
+# pushearlo. Solo para Compose (target: agent); nunca se despliega.
+FROM base AS agent
+RUN uv sync --locked
+USER appuser
+CMD ["python", "-m", "oncall.agent.app"]
+
+FROM base AS app
 USER appuser
 
 EXPOSE 8000 8001

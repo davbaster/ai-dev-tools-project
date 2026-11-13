@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-11, by the orchestrator session (#12: release PR #46 open, waiting for David to merge it)
+**Last updated:** 2026-11-13, by the orchestrator session (#69 closed: make demo-local merged)
 
 ## Current state
 
@@ -25,21 +25,31 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 - #9 (test suites): groomed, approved by David, implemented on `9-test-suites`, **QA: PASS**, PR #36 merged into `main` with David's OK (no CI yet). #9 is closed, branch deleted. Targets: `test-unit`, `test-frontend`, `test-contract`, and `test-integration` with a throwaway Postgres (own Compose project, port 5433 / `TEST_DB_PORT`, removed even on failure, `TEST_DATABASE_URL` override); `make test` runs all four (so it now needs Docker); one missing frontend flow test (login → save → list); `AGENTS.md` and testing-guidelines updated. `make test`: unit 46, frontend 57, contract 4, integration 51.
 - #10 (CI workflow): groomed, approved by David (with `bandit` and `pip-audit`), implemented on `10-ci`, **QA: PASS**, PR #37 merged into `main` with David's OK and green CI. #10 is closed, branch deleted. CI on the push to `main` green (run 42515414360). `make security` (bandit on backend/frontend, medium+; pip-audit), `.github/workflows/ci.yml` (one job: `make install`, `lint`, `security`, `test`, `build`; on every PR and pushes to `main`/`prod`; no secrets; pinned actions; concurrency cancel), `make ci-local` with `act` (`TEST_DB_HOST=host.docker.internal`), docs say PRs merge only with green CI + QA PASS. Red-path check: throwaway PR #38 failed at Lint, later steps skipped; closed and branch deleted.
 - #11 (Render + CD to dev): approved by David (dev on Render's free Postgres, prod on Neon in #12), PRs #39 (blueprint + CD), #40 (frontend retries) and #41 (the browser wakes the backend) merged with green CI and David's OK. **QA: PASS**, #11 closed. Dev: frontend https://para-luego-dev-frontend.onrender.com, backend https://para-luego-dev-backend.onrender.com; every green push to `main` deploys there (`cd-dev.yml`). Free-plan lesson: calls from one Render service never wake a sleeping free service, so the browser wakes the backend (`BACKEND_PUBLIC_URL`, `_wake.html`). See `_docs/deploy.md`. **Dev database expires 2026-12-08.**
+- #12 (prod deploy, rollback, promote-prod): approved by David, PRs #44 and #45 merged with green CI and David's OK; first release PR #46 merged by David. **QA: PASS**, #12 closed. **Prod:** frontend https://para-luego-prod-frontend.onrender.com, backend https://para-luego-prod-backend.onrender.com, database on Neon free; Blueprint `render.prod.yaml` on branch `prod`. Release: `make promote-prod` → David merges with **Create a merge commit** → Deploy prod deploys the image dev ran. Rollback: the Rollback workflow or `make rollback ENV TAG`. `prod` is protected (PR + CI check); `main` isn't. QA test users: `qa12proda2d876` (prod), `qa12deva2d876` (dev). Follow-ups #42 (rollback across migrations), #43 (dev database expiry).
+- #13 (OpenTelemetry + JSON logs): approved by David with six OpenTelemetry dependencies, PR #47 merged with green CI and David's OK. **QA: PASS**, #13 closed. Shared `telemetry/` package; one trace frontend → backend → DB; JSON logs with trace ids on dev (checked in Render's logs: frontend `POST /items` and backend `item saved` share the trace id). No export on Render (no `OTEL_EXPORTER_OTLP_ENDPOINT`). Test user `qa13devac633c` on dev.
+- #14 (local observability): approved by David, PR #48 merged with green CI and David's OK. **QA: PASS**, #14 closed. `make up` also runs the OTel Collector, Prometheus, Tempo, Loki and Grafana (http://localhost:3000, dashboard "Para Luego"); see `observability/README.md`. Dev on Render unchanged (reports `b426e20`).
+- #15 (alerts + webhook): approved by David, PR #49 merged with green CI and David's OK. **QA: PASS**, #15 closed. Grafana rules SaveItemFailing and HighServerErrors; webhook to `ALERT_WEBHOOK_URL` (default `http://oncall-agent:8080/alerts`) with a bearer token; payload and how to trigger them in `observability/README.md`. Dev reports `2a880c1`.
+- #16 (MCP server): approved by David with `mcp`, PR #50 merged with green CI and David's OK. **QA: PASS**, #16 closed. `make up` runs `mcp-server` at http://127.0.0.1:8090/mcp (bearer `MCP_TOKEN`) with four read-only tools, redaction and an audit log (`make mcp-audit`); see `oncall/mcp_server/README.md`. Dev reports `2b909c5`.
+- #17 (on-call responder): approved by David, PR #51 merged with green CI and David's OK. **QA: PASS** (live, with David's keys), #17 closed. `make up` runs `oncall-agent` (127.0.0.1:8080): Grafana webhook → `incident` issue → LLM investigation with the MCP tools → fix commit `Fixes #n` + prod PR, or `needs-human`. Push is off by default (`RESPONDER_ALLOW_PUSH`). See `oncall/agent/README.md`. Dev reports `5e5d035`.
+- #19 (demo bug + demo): PR #64 merged with green CI and David's OK. **QA: PASS** with the live demo: `make demo-on` → incidents #65/#66 → responder pushed the fix to `main` (`c3a3adf`, `d4e7041`) → CI/CD to dev → prod PR #67 → local backend with the fix → alert resolved. #19 closed. Script: `_docs/demo.md`.
+- #20 (README): PR #68 merged with green CI and David's OK. **QA: PASS**, #20 closed. Root `README.md` is the entry point for reviewers. Dev reports `233e7b5`.
+- #69 (local demo for reviewers): PR #70 merged with green CI and David's OK. **QA: PASS** (clean clone without `.env`, replay mode; live with David's key), #69 closed. `make demo-local` runs bug → alert → responder fix → draft prod PR locally, no GitHub, no keys needed. Dev reports `d557bc2`.
 - `/` now calls `getMe` and then `getDaily`; frontend test fakes that serve `/` must answer `/api/daily`.
 - Deadline: **Friday 2026-11-13** (Costa Rica time). Peer reviews of three other projects are also required to pass.
 
 ## In progress
 
-- #12 (prod deploy, issue open for the live QA): PRs #44 and #45 merged into `main` (dev reports `4527e3e`). #45 fixed Deploy prod checking out prod's older Makefile (first live run failed with `No rule to make target 'promoted-sha'`; `## QA: FAIL` then pre-merge PASS of the fix on #12).
-- `prod` branch exists (created at `68de85a`). David moved the protection rule from `main` (where it blocked PR #45 with a required review) to `prod`: PR required, 0 approvals, no force push or deletion. **Missing on `prod`: the required status check `lint, security, tests, build`.** `main` has no protection (the responder pushes there).
-- **Release PR #46** (`main` → `prod`) opened with `make promote-prod`; running it again printed the open PR (live criterion OK). Waiting for its CI and for David to merge it with **Create a merge commit**. That Deploy prod run creates `:prod` and skips the deploy (no prod hook secrets yet).
+- Nothing running. **Prod PR #67** (Release: main to prod; carries everything on `main`, now up to `d557bc2`) is open, CI green, waiting for David to merge with **Create a merge commit**.
+- The local stack is stopped; `make up` brings `main` back.
 
 ## Next up
 
-1. David merges PR #46 with **Create a merge commit**; orchestrator checks Deploy prod (should find the promoted main commit, move `:prod`, skip the deploy with a notice).
-2. David: Neon project (AWS US East, database `para_luego`, direct string without `-pooler`, `sslmode=require`); Render Blueprint on branch `prod`, path `render.prod.yaml`, Neon string as `DATABASE_URL`; save `RENDER_PROD_BACKEND_DEPLOY_HOOK` / `RENDER_PROD_FRONTEND_DEPLOY_HOOK`; add the required status check to the `prod` rule.
-3. Orchestrator: re-run Deploy prod, live QA (HTTPS flow, dev/prod separation, rollback + roll forward, made-up SHA). David in Chrome: wake-up after ~16 idle minutes, Copiar. Then final `## QA` on #12 and close it.
-- Don't push to `main` while waiting for services to sleep. Deadline Friday 2026-11-13.
+Deadline today, Friday 2026-11-13.
+1. David: merge prod PR #67 if he wants prod on the latest `main`.
+2. Demo polish for the GitHub mode (proposed): `Refs #n`, restart-safe "fix pushed" state, `_docs/demo.md` rebuilds only the backend.
+3. #18 admin panel (the README lists it as not built).
+- Reviewers: `make demo-local` (no keys needed). If `display_title` changes, re-record the replay (`_docs/demo.md`).
+- Follow-ups in backlog: #26, #28-#30, #33, #42, #43 (dev DB expires 2026-12-08), #62, #63.
 
 ## Decisions
 
@@ -97,7 +107,20 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 | 2026-11-08 | #8 (approved by David): share text built in the frontend from the `Item` it already gets; format title / note / URL one per line; buttons on `/items` and the Daily; text in an escaped HTML attribute, read by one vanilla script | No API change needed; avoids user data inside `<script>`; plan section 3 and testing guidelines ask for both pages |
 | 2026-11-08 | #9 (approved by David): `make test` runs every suite including integration on a throwaway Postgres (port 5433); per-suite targets need no Docker | AGENTS.md and plan section 9 already promise it; CI (#10) calls the same targets; tests never touch dev data |
 | 2026-11-08 | #10 (approved by David, with `bandit` and `pip-audit`): CI is one job calling the make targets; runs on every PR and on pushes to `main`/`prod`; no branch protection on `main` (the responder pushes there) | Same commands locally and in CI; no duplicate runs; matches the on-call design |
-| 2026-11-11 | `main` stays unprotected; `prod` requires a PR (0 approvals) and should require the CI check | The responder pushes fixes straight to `main`; David merges his own release PRs |
+| 2026-11-12 | OpenTelemetry api, sdk, exporter-otlp-proto-http, instrumentation fastapi/httpx/sqlalchemy approved | David approved for #13 |
+| 2026-11-12 | Telemetry setup in a shared top-level `telemetry/` package (copied by the Dockerfile) | Same code for both services without the frontend importing `backend/` |
+| 2026-11-12 | DB spans with the SQLAlchemy package's `EngineTracer` per engine, not `SQLAlchemyInstrumentor().instrument()` | The instrumentor declares support only below SQLAlchemy 2.1 and its global patch imports asyncio, which needs `greenlet` |
+| 2026-11-12 | Own request metrics and access log (route template, `unmatched` for 404s); the instrumentations' HTTP metrics and uvicorn's access log off; `httpx` logger at WARNING | Raw paths, client IPs and full URLs must never reach telemetry |
+| 2026-11-12 | #14: logs reach Loki through the collector's `file_log` receiver on Docker's json-file logs (read-only mount, collector as root); Loki label is `service_name` | David's choice over Alloy + Docker socket; Loki's OTLP ingestion names it `service_name` |
+| 2026-11-12 | Observability UIs on 127.0.0.1, Grafana anonymous Editor locally, no volumes; `OTEL_METRIC_EXPORT_INTERVAL=10000` in Compose | Local demo only; dashboards update within seconds |
+| 2026-11-12 | #15: Grafana alerting from files (no Alertmanager); webhook to `ALERT_WEBHOOK_URL` with a bearer token; 30 s / 1 min / no data = OK | David approved; one tool already running; the responder can reject anything not from Grafana |
+| 2026-11-12 | `mcp` 2.3.0 approved (MCPServer, Streamable HTTP, stateless) | David approved for #16; plan names the SDK |
+| 2026-11-12 | MCP audit through the SDK's request middleware + an ASGI auth middleware; client = User-Agent | Audits every tools/call, even those rejected by argument validation, and denied requests; stateless HTTP has no session client info |
+| 2026-11-12 | #17 (approved by David): LLM over httpx (OpenAI-compatible), fine-grained `GITHUB_TOKEN`, checks on a temp copy before a commit through the GitHub API, `RESPONDER_ALLOW_PUSH=false` by default | No new dependency; least privilege; nothing reaches `main` unchecked or by surprise |
+| 2026-11-13 | Missing `GITHUB_TOKEN` doesn't stop the responder (alerts are only logged) | `make up` must keep working on a fresh clone without secrets |
+| 2026-11-13 | Responder edits existing files only through exact search/replace on the real file; formats proposed files before checking; `LLM_REASONING_EFFORT=none` by default | Found in live QA: redacted text copied into code, fixes failing only on format, OpenAI rejecting tools with reasoning |
+| 2026-11-13 | Local demo for reviewers (#69): no GitHub, no push, no deploy; the "prod PR" is a draft file; LLM from the reviewer's key or a recorded replay | Reviewers run locally without David's token and maybe without a key; production only changes through a human-merged PR |
+| 2026-11-11 | `main` stays unprotected; `prod` requires a PR (0 approvals) and the CI check | The responder pushes fixes straight to `main`; David merges his own release PRs |
 | 2026-11-08 | #12 (approved by David): prod in its own Blueprint `render.prod.yaml` on branch `prod`; deploy-prod deploys the promoted `main` image (no rebuild) and moves `:prod` | Render's `imgURL` affects only one deploy and later deploys use the stored tag; a Blueprint on `main` would change prod on every merge to `main` and syncs ignore `sync: false` |
 | 2026-11-08 | #11: the browser wakes the sleeping Render backend (`BACKEND_PUBLIC_URL`); server-side retries only 5 s | Render's logs showed calls from the frontend service never wake a free backend; only internet traffic does |
 | 2026-11-08 | ~~Merge PRs without CI until #10~~ Closed: since #10 (merged), PRs merge only with green CI + QA PASS + David's OK | CI exists now (`.github/workflows/ci.yml`) |

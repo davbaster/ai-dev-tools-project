@@ -1,0 +1,6 @@
+{
+  "description": "Demo bug (#19, #69): with BUG_SAVE_ITEM=1, titles over 40 characters raise IndexError in POST /api/items. Applied only to the throwaway demo workspace, never to main.",
+  "path": "backend/items.py",
+  "old": "    return title[:SHORT_TITLE_CHARS].rstrip() + \"… \" + words[-1]\n",
+  "new": "    return title[:SHORT_TITLE_CHARS].rstrip() + \"… \" + words[len(words)]\n"
+}

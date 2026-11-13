@@ -74,9 +74,10 @@ Render runs the frontend, the backend and Postgres. The admin panel acts as a mi
 ## 6. Observability
 
 - **Key user journey:** *save an item* (frontend form → backend `POST /api/items`) - instrumented end to end across both services, one trace: frontend HTTP span, frontend → backend client span, backend HTTP span, DB span, a `items_saved_total` counter, a request-duration histogram, and structured JSON logs that carry the same `trace_id`.
-- Every request: `http_requests_total{route, method, status}` with the **route template**, never the raw path.
+- Every request (both services): counter `http.requests` (Prometheus `http_requests_total`) and histogram `http.server.request.duration` in seconds, attributes `route` (the **route template**, never the raw path; `unmatched` for 404s), `method`, `status`. Backend counter `items.saved` (`items_saved_total`). Health checks are counted but make no spans or access lines.
+- Setup lives in `telemetry/` (#13). Export over OTLP/HTTP only when `OTEL_EXPORTER_OTLP_ENDPOINT` is set (locally, #14); Render exports nothing but still logs JSON with trace ids.
 - **No customer data in telemetry:** no usernames, URLs, titles or notes; only ids.
-- Logs are JSON to stdout; the collector ships them to Loki. Grafana links a log line to its trace in Tempo by `trace_id`.
+- Logs are JSON to stdout; the collector ships them to Loki (its `file_log` receiver reads Docker's json-file logs, #14). Grafana links a log line to its trace in Tempo by `trace_id`, and a span back to its logs. Loki indexes `service_name`. Setup and URLs: `observability/README.md`.
 
 ## 7. Alerting on user impact
 
@@ -85,15 +86,17 @@ Alerts measure what users feel, not CPU:
 - **SaveItemFailing:** error rate of backend `POST /api/items` > 5% over 5 minutes.
 - **HighServerErrors:** 5xx rate on any route > 5% over 5 minutes.
 
-Each alert's webhook goes to the responder.
+Each alert's webhook goes to the responder. Grafana alerting, provisioned from files; evaluated every 30 s, firing after 1 minute, resolved notifications too; webhook to `ALERT_WEBHOOK_URL` with a bearer token (`ALERT_WEBHOOK_TOKEN`). Payload and how to trigger them: `observability/README.md` (#15).
 
 ## 8. On-call responder
 
 1. Wakes on an alert webhook (or the cloud threshold).
 2. Opens a GitHub issue labeled `incident`.
-3. Investigates with the MCP tools: `get_recent_logs`, `query_metrics`, `check_health`, `read_source_file`.
+3. Investigates with the MCP tools: `get_recent_logs`, `query_metrics`, `check_health`, `read_source_file` (read-only, redacted, audited; `oncall/mcp_server/README.md`, #16).
 4. If the cause is found in code, writes a minimal fix plus a test and **pushes it directly to `main`**. CI runs; if green, CD deploys to **dev** and the alert resolves. It then opens a PR from `main` to `prod`; a human merges it to deploy to production.
 5. If not, labels the incident `needs-human`, writes what it checked, and shows it in the admin panel.
+
+Implementation (#17): `oncall/agent/` (Compose `oncall-agent`). Fixes are checked with ruff and the non-Docker suites on a copy of the repo before a commit through the GitHub API; `RESPONDER_ALLOW_PUSH` (off by default) enables pushing. See `oncall/agent/README.md`.
 
 Demo bug: a feature-flagged defect (for example `BUG_SAVE_ITEM=1` makes backend `POST /api/items` raise on long titles) that the responder can find and fix.
 
@@ -151,3 +154,5 @@ Added after the seed (issue numbers 21 and 22 are PRs):
 2. Locally: `make up`, open Grafana, show the save-item trace with its logs and metrics.
 3. Turn on the demo bug, save a long title, watch the alert fire, the incident open, and the responder push a fix to `main`.
 4. CI passes, CD deploys to dev, the alert resolves. Merge the responder's PR from `main` to `prod` to release.
+
+Step by step, with timings and how to re-arm the bug: `_docs/demo.md` (#19).
