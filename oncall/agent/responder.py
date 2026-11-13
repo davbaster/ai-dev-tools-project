@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from pathlib import PurePosixPath
 
 from oncall.agent.checks import CheckResult, check_fix
-from oncall.agent.github import NEEDS_HUMAN_LABEL, GitHub
+from oncall.agent.github import FIX_MARKER, NEEDS_HUMAN_LABEL, GitHub
 from oncall.agent.llm import LLM, LLMError
 from oncall.mcp_server.redact import redact
 
@@ -197,7 +197,11 @@ class Responder:
         number = existing["number"]
         ends = _first(payload, "endsAt") or "now"
         incident = self.incidents.get(alertname)
-        if incident and incident.number == number and incident.fixed:
+        # En memoria o, tras un reinicio, por la marca en el incidente (#71).
+        fixed = (
+            incident is not None and incident.number == number and incident.fixed
+        ) or await self.github.fix_pushed(number)
+        if fixed:
             await self.github.comment(
                 number, f"Alert resolved at {ends} after the fix. Closing the incident."
             )
@@ -354,7 +358,9 @@ class Responder:
             log.info("fix proposed, push disabled", extra={"fields": _ids(incident)})
             return True, "done"
         branch = self.config.target_branch
-        message = f"{summary.splitlines()[0][:72]}\n\nFixes #{incident.number}"
+        # Refs, no Fixes: GitHub cerraría el incidente al pushear; lo cierra el
+        # responder cuando la alerta se resuelve (#71).
+        message = f"{summary.splitlines()[0][:72]}\n\nRefs #{incident.number}"
         sha = await self.github.commit_files(branch, files, message)
         incident.fixed = True
         links = f"Commit `{sha[:7]}` on `{branch}`."
@@ -366,10 +372,15 @@ class Responder:
             )
         elif branch == "main":
             pr = await self.github.prod_pr(incident.number)
-            links += f" CI runs and, if green, CD deploys it to dev. Prod PR: {pr}"
+            links += (
+                f" CI runs and, if green, CD deploys it to dev. Prod PR: {pr}. "
+                "This incident closes when the alert resolves."
+            )
         else:
             links += " Not `main`, so no prod PR (QA target)."
-        await self.github.comment(incident.number, report + "\n\n" + links)
+        await self.github.comment(
+            incident.number, report + "\n\n" + links + "\n\n" + FIX_MARKER
+        )
         log.info(
             "fix pushed",
             extra={"fields": {**_ids(incident), "branch": branch, "sha": sha}},

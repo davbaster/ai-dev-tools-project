@@ -8,6 +8,9 @@ from oncall.mcp_server.redact import redact
 API = "https://api.github.com"
 INCIDENT_LABEL = "incident"
 NEEDS_HUMAN_LABEL = "needs-human"
+# Marca oculta en el comentario del arreglo: el responder sabe que pusheó un
+# arreglo aunque se haya reiniciado (#71).
+FIX_MARKER = "<!-- oncall:fix-pushed -->"
 
 
 def incident_title(alertname: str, summary: str) -> str:
@@ -73,6 +76,12 @@ class GitHub:
 
     async def label(self, number: int, label: str) -> None:
         await self._call("POST", f"/issues/{number}/labels", json={"labels": [label]})
+
+    async def fix_pushed(self, number: int) -> bool:
+        comments = await self._call(
+            "GET", f"/issues/{number}/comments", params={"per_page": 100}
+        )
+        return any(FIX_MARKER in (c.get("body") or "") for c in comments)
 
     async def labels(self, number: int) -> list[str]:
         issue = await self._call("GET", f"/issues/{number}")

@@ -11,10 +11,10 @@ Wakes on Grafana's alert webhook (#15), opens a GitHub issue labeled `incident`,
    - `escalate(checked, ruled_out, next_steps)`.
 
    Limits: 20 steps, 10 minutes. Hitting one, or the LLM/MCP failing, escalates with the reason.
-4. **Fix, push allowed:** one commit on `RESPONDER_TARGET_BRANCH` through the GitHub Git Data API, message `<summary>\n\nFixes #<incident>`. On `main` it also opens (or comments on) the PR `main` → `prod`. The incident gets cause, evidence, diff, commit and PR.
+4. **Fix, push allowed:** one commit on `RESPONDER_TARGET_BRANCH` through the GitHub Git Data API, message `<summary>\n\nRefs #<incident>` (`Refs`, not `Fixes`, so GitHub doesn't close the incident on push). On `main` it also opens (or comments on) the PR `main` → `prod`. The incident gets cause, evidence, diff, commit and PR.
 5. **Fix, push disabled** (default): the diff and explanation go on the incident, labeled `needs-human`.
 6. **Escalation:** label `needs-human`, comment with what was checked, ruled out and next steps.
-7. **Resolved:** comment on the open incident; close it only if a fix was pushed.
+7. **Resolved:** comment on the open incident; close it only if a fix was pushed. "Fix pushed" is remembered in memory and, after a restart, read from a hidden marker in the fix comment (`<!-- oncall:fix-pushed -->`; local mode: `fix-<n>.diff` exists).
 
 Everything posted to GitHub (titles, comments, commit messages, diffs) goes through the MCP server's `redact`. The responder never merges, deploys, restarts, runs commands from the LLM, or writes outside those four folders.
 

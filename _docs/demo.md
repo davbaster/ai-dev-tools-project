@@ -60,7 +60,7 @@ Register, save three items in different categories, show **Tu Daily**, share one
 3. Grafana: the save-item error panel goes up; after ~2-3 minutes **SaveItemFailing** goes Pending, then Firing.
 4. GitHub: an issue `[incident] SaveItemFailing: …` appears, labeled `incident`. **HighServerErrors** usually opens a second incident for the same cause (#62); follow SaveItemFailing.
 5. `make responder-logs`: the responder's steps (logs, metrics, health, source files), then `propose_fix`. In about a minute:
-   - a commit on `main`: "<fix summary>" with `Fixes #<incident>`;
+   - a commit on `main`: "<fix summary>" with `Refs #<incident>` (not `Fixes`: the incident stays open until the alert resolves);
    - a comment on the incident with the cause, the evidence (the `trace_id`, the `IndexError` at `backend/items.py`), the diff and the checks that passed;
    - the PR **Release: main to prod** opened or updated, linking the incident.
 
@@ -70,9 +70,9 @@ Register, save three items in different categories, show **Tu Daily**, share one
 2. Locally, the alerts watch your machine, so run the fixed code:
    ```bash
    git pull
-   BUG_SAVE_ITEM=1 make up
+   BUG_SAVE_ITEM=1 docker compose up -d --build --no-deps --wait backend
    ```
-   With the flag still on, long titles now save. Within ~4-6 minutes (the alert's 5-minute window) the alert resolves; the responder comments "Alert resolved … after the fix" and **closes the incident**.
+   Only the backend is rebuilt (`make up` would also rebuild and restart the responder; it would still close the incident, because it finds its fix marker on the issue, but there's no need). With the flag still on, long titles now save. Within ~4-6 minutes (the alert's 5-minute window) the alert resolves; the responder comments "Alert resolved … after the fix" and **closes the incident**.
 3. Release: review the prod PR and merge it with **Create a merge commit** (a human decides). **Deploy prod** deploys the same image dev ran.
 4. `make demo-off`, and set `RESPONDER_ALLOW_PUSH=false` in `.env` again (then `make up`).
 
