@@ -40,15 +40,14 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 
 ## In progress
 
-- Nothing running. **Prod PR #67** (Release: main to prod, now up to `ae4233e`) is open, CI green, waiting for David to merge with **Create a merge commit**. Prod still runs `f2d04c4` (2026-11-11).
+- Nothing running. Prod PR #67 merged by David (`f4dd7c3`); Deploy prod green; prod frontend and backend report `ae4233e`. No PR open.
 - The local stack is stopped; `make up` brings `main` back.
 
 ## Next up
 
 Deadline today, Friday 2026-11-13.
-1. David: merge prod PR #67 so prod gets everything since 2026-11-11.
-2. David: peer reviews of three other projects (course requirement).
-3. #18 admin panel + cloud demo mode: not built; the README says so. Scope down only if time allows.
+1. David: peer reviews of three other projects (course requirement).
+2. #18 admin panel + cloud demo mode: not built; the README says so. Scope down only if time allows.
 - After the deadline: #43 (dev DB expires 2026-12-08), #62, #63, #42, and the app follow-ups #26, #28-#30, #33.
 - Reviewers: `make demo-local`. If `display_title` changes, re-record the replay (`_docs/demo.md`).
 
