@@ -1,0 +1,89 @@
+# Alert rules on user impact (#15, plan section 7). Same expressions as the
+# dashboard's error panels (a unit test checks it). Evaluated every 30 s; firing
+# after 1 minute above 5%. The webhook goes to the on-call responder (#17).
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: user-impact
+    folder: Para Luego
+    interval: 30s
+    rules:
+      - uid: save-item-failing
+        title: SaveItemFailing
+        condition: C
+        for: 1m
+        # Sin tráfico la razón no tiene datos: eso es normal, no una alerta.
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: page
+          team: para-luego
+        annotations:
+          summary: "Saving items fails: over 5% of POST /api/items answer 5xx"
+          description: "Users can't save items. Share of backend POST /api/items requests answered 5xx over the last 5 minutes is above 5%. Route: /api/items."
+          runbook: _docs/agents/oncall-responder.md
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange: {from: 600, to: 0}
+            model:
+              refId: A
+              instant: true
+              expr: '(sum(rate(http_requests_total{job="para-luego-backend", route="/api/items", method="POST", status=~"5.."}[5m])) or vector(0)) / clamp_min(sum(rate(http_requests_total{job="para-luego-backend", route="/api/items", method="POST"}[5m])), 1e-9)'
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              expression: A
+              reducer: last
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0.05]
+      - uid: high-server-errors
+        title: HighServerErrors
+        condition: C
+        for: 1m
+        # Sin tráfico la razón no tiene datos: eso es normal, no una alerta.
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: page
+          team: para-luego
+        annotations:
+          summary: "Server errors on {{ $labels.job }}: over 5% of requests answer 5xx"
+          description: "Users get errors. Share of 5xx answers on {{ $labels.job }} (any route) over the last 5 minutes is above 5%."
+          runbook: _docs/agents/oncall-responder.md
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange: {from: 600, to: 0}
+            model:
+              refId: A
+              instant: true
+              expr: '(sum by (job) (rate(http_requests_total{status=~"5.."}[5m])) or (sum by (job) (rate(http_requests_total[5m])) * 0)) / clamp_min(sum by (job) (rate(http_requests_total[5m])), 1e-9)'
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              expression: A
+              reducer: last
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0.05]

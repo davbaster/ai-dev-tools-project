@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-12, by the orchestrator session (#15 groomed, waiting for David's review)
+**Last updated:** 2026-11-12, by the orchestrator session (#15: PR #49 green CI + QA PASS, waiting for David's OK)
 
 ## Current state
 
@@ -33,12 +33,13 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 
 ## In progress
 
-- #15 (alerts + webhook): **groomed** by the PM (label `groomed`), waiting for David's review. Proposal: Grafana unified alerting provisioned from `observability/grafana/provisioning/alerting/`; SaveItemFailing and HighServerErrors (> 5% 5xx over 5 min, evaluated every 30 s, pending 1 min, no data = OK) with the dashboard's expressions; contact point posting Grafana's webhook JSON to `ALERT_WEBHOOK_URL` (default `http://oncall-agent:8080/alerts`, #17) with `Authorization: Bearer $ALERT_WEBHOOK_TOKEN`; firing and resolved; alert list panel; QA fires them by stopping Postgres with a throwaway receiver on the host.
+- #15 (alerts + webhook): approved by David. Implemented on `15-alerts`, **PR #49** (`Closes #15`), CI green, **`## QA: PASS`** on #15 (local live QA: fire by stopping Postgres, resolve, unreachable webhook). **Waiting for David's OK to merge.**
+- Adds `observability/grafana/provisioning/alerting/` (SaveItemFailing, HighServerErrors; contact point to `ALERT_WEBHOOK_URL` with `Authorization: Bearer $ALERT_WEBHOOK_TOKEN`), alert list panel, README with the webhook payload for #17.
 
 ## Next up
 
-1. David reviews #15. On approval: branch `15-alerts`, PR, CI, local live QA, merge with David's OK.
-2. Then #16 (MCP server), #17 (responder, implements the webhook from #15), #18 (admin panel), #19 (demo bug), #20 (README). #43 before 2026-12-08.
+1. David's OK → merge PR #49.
+2. #16 (MCP server: `get_recent_logs`, `query_metrics`, `check_health`, `read_source_file`, redaction, audit log) and #17 (responder: receives the #15 webhook at `http://oncall-agent:8080/alerts`, checks the bearer token). Then #18 (admin panel), #19 (demo bug), #20 (README). #43 before 2026-12-08.
 - Deadline Friday 2026-11-13 (Costa Rica). Don't push to `main` while waiting for services to sleep.
 
 ## Decisions
@@ -103,6 +104,7 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 | 2026-11-12 | Own request metrics and access log (route template, `unmatched` for 404s); the instrumentations' HTTP metrics and uvicorn's access log off; `httpx` logger at WARNING | Raw paths, client IPs and full URLs must never reach telemetry |
 | 2026-11-12 | #14: logs reach Loki through the collector's `file_log` receiver on Docker's json-file logs (read-only mount, collector as root); Loki label is `service_name` | David's choice over Alloy + Docker socket; Loki's OTLP ingestion names it `service_name` |
 | 2026-11-12 | Observability UIs on 127.0.0.1, Grafana anonymous Editor locally, no volumes; `OTEL_METRIC_EXPORT_INTERVAL=10000` in Compose | Local demo only; dashboards update within seconds |
+| 2026-11-12 | #15: Grafana alerting from files (no Alertmanager); webhook to `ALERT_WEBHOOK_URL` with a bearer token; 30 s / 1 min / no data = OK | David approved; one tool already running; the responder can reject anything not from Grafana |
 | 2026-11-11 | `main` stays unprotected; `prod` requires a PR (0 approvals) and the CI check | The responder pushes fixes straight to `main`; David merges his own release PRs |
 | 2026-11-08 | #12 (approved by David): prod in its own Blueprint `render.prod.yaml` on branch `prod`; deploy-prod deploys the promoted `main` image (no rebuild) and moves `:prod` | Render's `imgURL` affects only one deploy and later deploys use the stored tag; a Blueprint on `main` would change prod on every merge to `main` and syncs ignore `sync: false` |
 | 2026-11-08 | #11: the browser wakes the sleeping Render backend (`BACKEND_PUBLIC_URL`); server-side retries only 5 s | Render's logs showed calls from the frontend service never wake a free backend; only internet traffic does |

@@ -117,6 +117,9 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin_local_only}
       GF_ANALYTICS_REPORTING_ENABLED: "false"
       GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/dashboards/para-luego.json
+      # Webhook de las alertas al responder de guardia (#15, #17).
+      ALERT_WEBHOOK_URL: ${ALERT_WEBHOOK_URL:-http://oncall-agent:8080/alerts}
+      ALERT_WEBHOOK_TOKEN: ${ALERT_WEBHOOK_TOKEN:-change_me_local_only}
     volumes:
       - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./observability/grafana/dashboards:/etc/grafana/dashboards:ro
