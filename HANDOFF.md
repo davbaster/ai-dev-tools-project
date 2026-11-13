@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-13, by the orchestrator session (#69 local demo groomed, waiting for David's review)
+**Last updated:** 2026-11-13, by the orchestrator session (#69: PR #70 green CI + QA PASS, waiting for David's OK)
 
 ## Current state
 
@@ -38,15 +38,17 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 
 ## In progress
 
-- **#69 (one-command local demo for reviewers):** filed and **groomed** at David's request, waiting for his review. `make demo-local` creates a throwaway git worktree with the bug patch, starts the stack with `docker-compose.demo.yml`, runs the responder in `RESPONDER_MODE=local` (incident/fix/draft prod PR as files in `demo-output/`, no GitHub, no push, no deploy), rebuilds the backend from the fixed workspace and waits for the alert to resolve. LLM: the reviewer's `LLM_API_KEY`, or a **recorded replay** of a real run (`oncall/agent/replays/demo_bug.json`, labeled as replay). `make demo-local-clean` removes everything.
-- Prod PR #67 (Release: main to prod, all of `main` up to `233e7b5`) waiting for David.
+- **#69 (local demo for reviewers):** approved by David. Implemented on `69-demo-local`, **PR #70** (`Closes #69`), CI green, **`## QA: PASS`** on #69: clean clone without `.env` ran `make demo-local` end to end in replay mode (8.2 min); live run with David's key (8.1 min) recorded as `oncall/agent/replays/demo_bug.json`; nothing pushed, no GitHub activity; `make demo-local-clean` leaves the checkout clean. **Waiting for David's OK to merge.**
+- Prod PR #67 (Release: main to prod) waiting for David.
+- The local stack is stopped (`make demo-local-clean`); `make up` to bring `main` back.
 
 ## Next up
 
 Deadline today, Friday 2026-11-13.
-1. David reviews #69 → implement (branch `69-demo-local`), record the replay with David's key, QA on a separate clean clone without `.env`, merge.
+1. David's OK → merge PR #70.
 2. Demo polish for the GitHub mode (proposed): `Refs #n`, restart-safe "fix pushed" state, `_docs/demo.md` rebuilds only the backend.
 3. #18 admin panel (the README lists it as not built).
+- If `display_title` changes, re-record the replay (`_docs/demo.md`); a unit test fails when it's stale.
 - Follow-ups in backlog: #26, #28-#30, #33, #42, #43 (dev DB expires 2026-12-08), #62, #63.
 
 ## Decisions
