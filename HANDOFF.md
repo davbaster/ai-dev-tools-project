@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-13, by the orchestrator session (#20 groomed, waiting for David's review)
+**Last updated:** 2026-11-13, by the orchestrator session (#20: PR #68 green CI + QA PASS, waiting for David's OK)
 
 ## Current state
 
@@ -37,15 +37,15 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 
 ## In progress
 
-- #20 (README): **groomed** by the PM (label `groomed`), waiting for David's review. Root `README.md`: pitch, live URLs, features, Mermaid architecture, stack, local run, tests/CI, deploy, observability and on-call, demo, AI-assisted process (AGENTS.md, roles, issue lifecycle, HANDOFF/log), layout, limitations (#18 not done, #43, #62...). Links instead of repeating docs.
-- Prod PR #67 (responder's fix from the demo) waiting for David's decision.
+- #20 (README): approved by David. Implemented on `20-readme`, **PR #68** (`Closes #20`), CI green, **`## QA: PASS`** on #20 (links, URLs, commands, ports, rendered Mermaid). **Waiting for David's OK to merge.**
+- Prod PR #67 (the responder's fix from the demo) waiting for David's decision.
 
 ## Next up
 
 Deadline today, Friday 2026-11-13.
-1. David reviews #20 → branch `20-readme`, PR, CI, QA (links and commands work), merge.
+1. David's OK → merge PR #68.
 2. Demo polish (proposed): `Refs #n` in the responder's fix commits, "fix pushed" state from the incident's comments, `_docs/demo.md` rebuilds only the backend.
-3. #18 admin panel (scope down with David, or leave).
+3. #18 admin panel (scope down with David, or leave; the README lists it as not built).
 - The demo bug is fixed on `main` (`d4e7041`); re-arm with a revert PR before the next demo.
 - Follow-ups in backlog: #26, #28-#30, #33, #42, #43 (dev DB expires 2026-12-08), #62, #63.
 
