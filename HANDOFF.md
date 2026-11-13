@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-13, by the orchestrator session (#19 closed: live demo passed; prod PR #67 waiting for David)
+**Last updated:** 2026-11-13, by the orchestrator session (#20 groomed, waiting for David's review)
 
 ## Current state
 
@@ -37,15 +37,16 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 
 ## In progress
 
-- Nothing running. **Prod PR #67** ("Release: main to prod", opened by the responder during the demo, CI green, links #65) is waiting for David's decision to merge (Create a merge commit).
+- #20 (README): **groomed** by the PM (label `groomed`), waiting for David's review. Root `README.md`: pitch, live URLs, features, Mermaid architecture, stack, local run, tests/CI, deploy, observability and on-call, demo, AI-assisted process (AGENTS.md, roles, issue lifecycle, HANDOFF/log), layout, limitations (#18 not done, #43, #62...). Links instead of repeating docs.
+- Prod PR #67 (responder's fix from the demo) waiting for David's decision.
 
 ## Next up
 
 Deadline today, Friday 2026-11-13.
-1. **Demo polish (small, proposed to David):** fix commits say `Refs #n` instead of `Fixes #n` (GitHub closed the incidents on push, before the alert resolved); the responder decides "fix pushed" from the incident's comments (survives restarts); `_docs/demo.md` step 4 rebuilds only the backend. Found in #19's live demo.
-2. **#20 README** (required by the course).
+1. David reviews #20 → branch `20-readme`, PR, CI, QA (links and commands work), merge.
+2. Demo polish (proposed): `Refs #n` in the responder's fix commits, "fix pushed" state from the incident's comments, `_docs/demo.md` rebuilds only the backend.
 3. #18 admin panel (scope down with David, or leave).
-- The demo bug is fixed on `main` now (`d4e7041`); re-arm with a revert PR before the next demo (`_docs/demo.md`).
+- The demo bug is fixed on `main` (`d4e7041`); re-arm with a revert PR before the next demo.
 - Follow-ups in backlog: #26, #28-#30, #33, #42, #43 (dev DB expires 2026-12-08), #62, #63.
 
 ## Decisions
