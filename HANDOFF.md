@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-13, by the orchestrator session (#20 closed: README merged)
+**Last updated:** 2026-11-13, by the orchestrator session (#69 local demo groomed, waiting for David's review)
 
 ## Current state
 
@@ -38,15 +38,15 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 
 ## In progress
 
-- Nothing running. **Prod PR #67** (Release: main to prod; now carries everything on `main` up to `233e7b5`, including the demo fix and the README) is open, CI green, waiting for David to merge with **Create a merge commit**.
+- **#69 (one-command local demo for reviewers):** filed and **groomed** at David's request, waiting for his review. `make demo-local` creates a throwaway git worktree with the bug patch, starts the stack with `docker-compose.demo.yml`, runs the responder in `RESPONDER_MODE=local` (incident/fix/draft prod PR as files in `demo-output/`, no GitHub, no push, no deploy), rebuilds the backend from the fixed workspace and waits for the alert to resolve. LLM: the reviewer's `LLM_API_KEY`, or a **recorded replay** of a real run (`oncall/agent/replays/demo_bug.json`, labeled as replay). `make demo-local-clean` removes everything.
+- Prod PR #67 (Release: main to prod, all of `main` up to `233e7b5`) waiting for David.
 
 ## Next up
 
 Deadline today, Friday 2026-11-13.
-1. David: merge prod PR #67 if he wants prod on the latest `main`.
-2. Demo polish (proposed, small): `Refs #n` in the responder's fix commits, "fix pushed" state from the incident's comments, `_docs/demo.md` rebuilds only the backend.
-3. #18 admin panel + cloud demo mode (largest remaining; the README lists it as not built).
-- The demo bug is fixed on `main` (`d4e7041`); re-arm with a revert PR before the next demo.
+1. David reviews #69 → implement (branch `69-demo-local`), record the replay with David's key, QA on a separate clean clone without `.env`, merge.
+2. Demo polish for the GitHub mode (proposed): `Refs #n`, restart-safe "fix pushed" state, `_docs/demo.md` rebuilds only the backend.
+3. #18 admin panel (the README lists it as not built).
 - Follow-ups in backlog: #26, #28-#30, #33, #42, #43 (dev DB expires 2026-12-08), #62, #63.
 
 ## Decisions
@@ -117,6 +117,7 @@ Deadline today, Friday 2026-11-13.
 | 2026-11-12 | #17 (approved by David): LLM over httpx (OpenAI-compatible), fine-grained `GITHUB_TOKEN`, checks on a temp copy before a commit through the GitHub API, `RESPONDER_ALLOW_PUSH=false` by default | No new dependency; least privilege; nothing reaches `main` unchecked or by surprise |
 | 2026-11-13 | Missing `GITHUB_TOKEN` doesn't stop the responder (alerts are only logged) | `make up` must keep working on a fresh clone without secrets |
 | 2026-11-13 | Responder edits existing files only through exact search/replace on the real file; formats proposed files before checking; `LLM_REASONING_EFFORT=none` by default | Found in live QA: redacted text copied into code, fixes failing only on format, OpenAI rejecting tools with reasoning |
+| 2026-11-13 | Local demo for reviewers (#69): no GitHub, no push, no deploy; the "prod PR" is a draft file; LLM from the reviewer's key or a recorded replay | Reviewers run locally without David's token and maybe without a key; production only changes through a human-merged PR |
 | 2026-11-11 | `main` stays unprotected; `prod` requires a PR (0 approvals) and the CI check | The responder pushes fixes straight to `main`; David merges his own release PRs |
 | 2026-11-08 | #12 (approved by David): prod in its own Blueprint `render.prod.yaml` on branch `prod`; deploy-prod deploys the promoted `main` image (no rebuild) and moves `:prod` | Render's `imgURL` affects only one deploy and later deploys use the stored tag; a Blueprint on `main` would change prod on every merge to `main` and syncs ignore `sync: false` |
 | 2026-11-08 | #11: the browser wakes the sleeping Render backend (`BACKEND_PUBLIC_URL`); server-side retries only 5 s | Render's logs showed calls from the frontend service never wake a free backend; only internet traffic does |
