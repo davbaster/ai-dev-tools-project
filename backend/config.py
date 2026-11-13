@@ -38,3 +38,8 @@ def get_database_url() -> str:
 def get_version() -> str:
     """Return APP_VERSION (the commit SHA baked into the image), or "local"."""
     return os.environ.get("APP_VERSION", "").strip() or "local"
+
+
+def short_titles_enabled() -> bool:
+    """BUG_SAVE_ITEM=1 turns on the demo's long-title feature (#19); read per request."""
+    return os.environ.get("BUG_SAVE_ITEM", "").strip() == "1"

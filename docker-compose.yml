@@ -35,6 +35,8 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-para_luego}:${POSTGRES_PASSWORD:-para_luego_local}@db:5432/${POSTGRES_DB:-para_luego}
       # Trazas y métricas al collector (#13/#14); la app no depende de él.
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      # Bug de la demo (#19): 1 = encendido. `make demo-on` / `make demo-off`.
+      BUG_SAVE_ITEM: ${BUG_SAVE_ITEM:-0}
       OTEL_METRIC_EXPORT_INTERVAL: "10000"
     ports:
       - "${BACKEND_PORT:-8001}:8001"
