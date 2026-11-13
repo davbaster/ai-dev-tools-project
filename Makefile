@@ -2,7 +2,7 @@
 # Compatible with GNU Make 3.81 (no .ONESHELL or newer features).
 
 .DEFAULT_GOAL := help
-.PHONY: help install dev-backend dev-frontend lint format security ci-local mcp mcp-audit test test-unit test-frontend test-contract test-integration migrate build up down logs image push-image wait-image retag promoted-sha deploy-hooks deploy-dev deploy-prod wait-deploy rollback promote-prod
+.PHONY: help install dev-backend dev-frontend lint format security ci-local mcp mcp-audit responder-logs test test-unit test-frontend test-contract test-integration migrate build up down logs image push-image wait-image retag promoted-sha deploy-hooks deploy-dev deploy-prod wait-deploy rollback promote-prod
 
 help: ## List every target
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  %-17s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -69,6 +69,9 @@ MCP_LOCAL_ENV = LOKI_URL=http://127.0.0.1:3100 PROMETHEUS_URL=http://127.0.0.1:9
 mcp: ## Run the MCP server locally on 127.0.0.1:8090 (needs MCP_TOKEN; `make up` runs it in Docker)
 	$(MCP_LOCAL_ENV) MCP_HOST=127.0.0.1 MCP_AUDIT_LOG=$${MCP_AUDIT_LOG:-.mcp-audit.jsonl} uv run python -m oncall.mcp_server.server
 
+responder-logs: ## Follow the on-call responder's logs (Ctrl+C to stop)
+	docker compose logs -f oncall-agent
+
 mcp-audit: ## Print the last 50 entries of the MCP server's audit log (Docker)
 	docker compose exec -T mcp-server tail -n 50 /var/log/mcp/audit.jsonl
 
@@ -129,7 +132,7 @@ CHECK_IMAGE = docker manifest inspect $(IMAGE):$(TAG) >/dev/null 2>&1 || { echo 
 
 image: ## Build the app image as IMAGE:TAG and IMAGE:dev with APP_VERSION=TAG (TAG=<sha> required)
 	@$(CHECK_TAG)
-	docker build --build-arg APP_VERSION=$(TAG) -t $(IMAGE):$(TAG) -t $(IMAGE):dev .
+	docker build --target app --build-arg APP_VERSION=$(TAG) -t $(IMAGE):$(TAG) -t $(IMAGE):dev .
 
 push-image: ## Push IMAGE:TAG and IMAGE:dev (needs docker login to the registry)
 	@$(CHECK_TAG)
