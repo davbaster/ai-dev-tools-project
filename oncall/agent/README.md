@@ -27,6 +27,7 @@ Everything posted to GitHub (titles, comments, commit messages, diffs) goes thro
 | `GITHUB_TOKEN` | Fine-grained token for this repository only: **Contents**, **Issues**, **Pull requests** read/write (no Workflows, no Administration). Without it, alerts are logged but no incident is opened. |
 | `GITHUB_REPOSITORY` | `davbaster/ai-dev-tools-project` |
 | `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` | OpenAI-compatible API (default `https://api.openai.com/v1`, `gpt-6-luna`). Without a key, incidents are opened and escalated (`LLM_API_KEY is not set`). |
+| `LLM_REASONING_EFFORT` | Sent as `reasoning_effort` when not empty. OpenAI's reasoning models (e.g. `gpt-6-luna`) need `none` to use tools on Chat Completions (Compose's default). Empty for other providers. |
 | `RESPONDER_ALLOW_PUSH` | `false` (default): propose only. `true`: commit the fix. |
 | `RESPONDER_TARGET_BRANCH` | `main` (default). Any other branch gets the commit but no prod PR: use a throwaway branch to try the fix path. |
 

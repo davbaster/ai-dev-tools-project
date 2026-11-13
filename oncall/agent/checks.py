@@ -43,6 +43,9 @@ OUTPUT_TAIL = 3000
 class CheckResult:
     ok: bool
     report: str
+    # Los archivos propuestos tal como quedaron después de `ruff format`: esto es
+    # lo que se commitea (en QA el LLM perdía sus intentos solo por formato).
+    files: dict[str, str] | None = None
 
 
 async def _run(name: str, command: list[str], cwd: Path) -> tuple[bool, str]:
@@ -80,10 +83,18 @@ async def check_fix(repo_root: Path, files: dict[str, str]) -> CheckResult:
             target = work / path
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(content, encoding="utf-8")
+        # Solo los archivos propuestos, con el formato del repo.
+        await _run(
+            "ruff format",
+            [sys.executable, "-m", "ruff", "format", *files],
+            work,
+        )
+        formatted = {path: (work / path).read_text(encoding="utf-8") for path in files}
         reports = []
         for name, command in COMMANDS:
             ok, report = await _run(name, command, work)
             reports.append(report)
             if not ok:
                 return CheckResult(False, "\n\n".join(reports))
-        return CheckResult(True, "\n\n".join(r.splitlines()[0] for r in reports))
+        summary = "\n\n".join(r.splitlines()[0] for r in reports)
+        return CheckResult(True, summary, formatted)

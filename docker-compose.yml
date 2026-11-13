@@ -112,6 +112,8 @@ services:
       LLM_BASE_URL: ${LLM_BASE_URL:-https://api.openai.com/v1}
       LLM_API_KEY: ${LLM_API_KEY:-}
       LLM_MODEL: ${LLM_MODEL:-gpt-6-luna}
+      # OpenAI: tools on Chat Completions need "none"; set it empty for other providers.
+      LLM_REASONING_EFFORT: ${LLM_REASONING_EFFORT-none}
       RESPONDER_ALLOW_PUSH: ${RESPONDER_ALLOW_PUSH:-false}
       RESPONDER_TARGET_BRANCH: ${RESPONDER_TARGET_BRANCH:-main}
       REPO_ROOT: /repo

@@ -90,7 +90,12 @@ def main() -> None:
     responder = Responder(
         config,
         github,
-        LLM(config.llm_base_url, config.llm_api_key, config.llm_model),
+        LLM(
+            config.llm_base_url,
+            config.llm_api_key,
+            config.llm_model,
+            config.llm_reasoning_effort,
+        ),
         MCPTools(config.mcp_url, config.mcp_token),
     )
     log.info(

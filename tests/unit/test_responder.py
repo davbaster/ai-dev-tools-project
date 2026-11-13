@@ -29,6 +29,7 @@ def config(**kwargs) -> Config:
         "llm_base_url": "http://llm.test",
         "llm_api_key": "llm-key",
         "llm_model": "test-model",
+        "llm_reasoning_effort": "",
         "allow_push": True,
         "target_branch": "main",
         "repo_root": ROOT,
@@ -139,7 +140,10 @@ def tool_call(name, args, call_id="c1"):
 
 FIX = {
     "files": [
-        {"path": "backend/items.py", "content": "x = 1\n"},
+        {
+            "path": "backend/items.py",
+            "edits": [{"old": "URL_MAX_LENGTH = 2048", "new": "URL_MAX_LENGTH = 2049"}],
+        },
         {
             "path": "tests/unit/test_fix.py",
             "content": "def test_x():\n    assert True\n",
@@ -328,4 +332,59 @@ def test_resolved_closes_only_after_a_fix():
     ],
 )
 def test_fix_paths_and_size_are_limited(files):
-    assert isinstance(_validate_fix(files), str)
+    assert isinstance(_validate_fix(files, ROOT), str)
+
+
+NEW_TEST = {"path": "tests/unit/test_new.py", "content": "def test_x():\n    pass\n"}
+
+
+@pytest.mark.parametrize(
+    "edit",
+    [
+        {"path": "backend/items.py", "content": "whole file"},  # existing: edits only
+        {"path": "backend/items.py", "edits": [{"old": "not in the file", "new": "x"}]},
+        {"path": "backend/items.py", "edits": [{"old": "import", "new": "x"}]},  # many
+        {
+            "path": "backend/items.py",
+            "edits": [{"old": "URL_MAX_LENGTH", "new": "[REDACTED]"}],
+        },
+    ],
+)
+def test_edits_must_be_exact_and_clean(edit):
+    assert isinstance(_validate_fix([edit, NEW_TEST], ROOT), str)
+
+
+def test_new_file_with_redacted_text_is_refused():
+    bad = {"path": "tests/unit/test_new.py", "content": "password = '[REDACTED]'"}
+    assert "REDACTED" in _validate_fix([bad], ROOT)
+
+
+def test_edits_change_only_their_text():
+    edit = {
+        "path": "backend/items.py",
+        "edits": [{"old": "URL_MAX_LENGTH = 2048", "new": "URL_MAX_LENGTH = 4096"}],
+    }
+    files = _validate_fix([edit, NEW_TEST], ROOT)
+    original = (ROOT / "backend/items.py").read_text(encoding="utf-8")
+    assert files["backend/items.py"] == original.replace("= 2048", "= 4096", 1)
+
+
+def test_llm_sends_reasoning_effort_only_when_set():
+    from oncall.agent.llm import LLM
+
+    bodies = []
+
+    def api(request):
+        bodies.append(json.loads(request.content))
+        return httpx.Response(
+            200, json={"choices": [{"message": {"role": "assistant"}}]}
+        )
+
+    for effort in ("none", ""):
+        llm = LLM(
+            "http://llm.test", "k", "m", effort, transport=httpx.MockTransport(api)
+        )
+        run(llm.chat([], []))
+    assert (
+        bodies[0]["reasoning_effort"] == "none" and "reasoning_effort" not in bodies[1]
+    )

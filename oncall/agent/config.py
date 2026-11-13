@@ -15,6 +15,7 @@ class Config:
     llm_base_url: str
     llm_api_key: str
     llm_model: str
+    llm_reasoning_effort: str
     allow_push: bool
     target_branch: str
     repo_root: Path
@@ -41,6 +42,7 @@ def load_config() -> Config:
         .rstrip("/"),
         llm_api_key=os.environ.get("LLM_API_KEY", "").strip(),
         llm_model=os.environ.get("LLM_MODEL", "gpt-6-luna").strip(),
+        llm_reasoning_effort=os.environ.get("LLM_REASONING_EFFORT", "").strip(),
         allow_push=_flag("RESPONDER_ALLOW_PUSH"),
         target_branch=os.environ.get("RESPONDER_TARGET_BRANCH", "main").strip()
         or "main",

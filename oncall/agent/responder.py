@@ -30,10 +30,14 @@ FINISH_TOOLS = [
         "function": {
             "name": "propose_fix",
             "description": (
-                "Propose the smallest fix: whole new contents of at most 3 files under "
-                "backend/, frontend/, telemetry/ or tests/, including at least one test "
-                "under tests/ that would have caught the bug. The responder runs ruff and "
-                "the unit/frontend/contract tests before pushing; a failure comes back here."
+                "Propose the smallest fix in at most 3 files under backend/, frontend/, "
+                "telemetry/ or tests/, including at least one test under tests/ that would "
+                "have caught the bug. For an existing file give `edits`: exact search/"
+                "replace pairs applied to the real file (each `old` must appear exactly "
+                "once; copy it from read_source_file without the line numbers). For a new "
+                "file give its whole `content`. Text shown as [REDACTED] by the tools must "
+                "not appear in old, new or content. The responder runs ruff and the "
+                "unit/frontend/contract tests before pushing; a failure comes back here."
             ),
             "parameters": {
                 "type": "object",
@@ -44,9 +48,20 @@ FINISH_TOOLS = [
                             "type": "object",
                             "properties": {
                                 "path": {"type": "string"},
+                                "edits": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "old": {"type": "string"},
+                                            "new": {"type": "string"},
+                                        },
+                                        "required": ["old", "new"],
+                                    },
+                                },
                                 "content": {"type": "string"},
                             },
-                            "required": ["path", "content"],
+                            "required": ["path"],
                         },
                     },
                     "summary": {
@@ -305,12 +320,13 @@ class Responder:
 
     async def propose_fix(self, incident: Incident, args: dict) -> tuple[bool, str]:
         """Return (finished, message for the LLM)."""
-        files = _validate_fix(args.get("files"))
+        files = _validate_fix(args.get("files"), self.config.repo_root)
         if isinstance(files, str):
             return False, "REFUSED: " + files
         check: CheckResult = await self.checker(self.config.repo_root, files)
         if not check.ok:
             return False, "CHECKS FAILED, fix and propose again:\n" + check.report
+        files = check.files or files  # la versión formateada es la que se commitea
         summary, cause, evidence = _strings(
             args, "summary", "cause", "evidence"
         ).values()
@@ -393,15 +409,21 @@ class Responder:
         return redact("\n".join(chunks))[:6000]
 
 
-def _validate_fix(files) -> dict[str, str] | str:
+def _validate_fix(files, repo_root) -> dict[str, str] | str:
+    """The fixed files' full contents, or why the proposal is refused.
+
+    Existing files change only through search/replace edits applied to the real
+    file: the LLM sees files through redaction, and copying a whole file back
+    would write "[REDACTED]" into the code (found in #17's QA).
+    """
     if not isinstance(files, list) or not files:
         return "files must be a non-empty list"
     if len(files) > MAX_FIX_FILES:
         return f"at most {MAX_FIX_FILES} files"
     result = {}
     for item in files:
-        path = str((item or {}).get("path", "")).replace("\\", "/")
-        content = (item or {}).get("content")
+        item = item if isinstance(item, dict) else {}
+        path = str(item.get("path", "")).replace("\\", "/")
         parts = PurePosixPath(path).parts
         if (
             not parts
@@ -411,12 +433,49 @@ def _validate_fix(files) -> dict[str, str] | str:
             or any(p.startswith(".") for p in parts)
         ):
             return f"{path!r} is outside {', '.join(f + '/' for f in FIX_FOLDERS)}"
-        if not isinstance(content, str) or len(content) > MAX_FILE_CHARS:
-            return f"content of {path!r} must be text under {MAX_FILE_CHARS} characters"
-        result[path] = content
+        target = repo_root / path
+        if target.exists():
+            text = _apply_edits(
+                path, target.read_text(encoding="utf-8"), item.get("edits")
+            )
+        else:
+            text = item.get("content")
+            if not isinstance(text, str):
+                return f"{path!r} is a new file: give its whole content"
+            if REDACTED_MARK in text:
+                return f"content of {path!r} contains {REDACTED_MARK}"
+        if isinstance(text, str) and text.startswith("REFUSED:"):
+            return text.removeprefix("REFUSED: ")
+        if len(text) > MAX_FILE_CHARS:
+            return f"{path!r} would be over {MAX_FILE_CHARS} characters"
+        result[path] = text
     if not any(p.startswith("tests/") for p in result):
         return "include at least one test under tests/"
     return result
+
+
+REDACTED_MARK = "[REDACTED"
+
+
+def _apply_edits(path: str, text: str, edits) -> str:
+    """Apply search/replace edits; a refusal comes back as 'REFUSED: ...'."""
+    if not isinstance(edits, list) or not edits:
+        return f"REFUSED: {path!r} exists: give edits (old/new), not whole content"
+    for edit in edits:
+        old = (edit or {}).get("old") if isinstance(edit, dict) else None
+        new = (edit or {}).get("new") if isinstance(edit, dict) else None
+        if not isinstance(old, str) or not old or not isinstance(new, str):
+            return f"REFUSED: every edit of {path!r} needs non-empty old and a new"
+        if REDACTED_MARK in old or REDACTED_MARK in new:
+            return f"REFUSED: an edit of {path!r} contains {REDACTED_MARK}"
+        count = text.count(old)
+        if count != 1:
+            return (
+                f"REFUSED: in {path!r} the old text appears {count} times; it must "
+                "appear exactly once (copy it exactly, without line numbers)"
+            )
+        text = text.replace(old, new, 1)
+    return text
 
 
 def _strings(args: dict, *names: str) -> dict[str, str]:
