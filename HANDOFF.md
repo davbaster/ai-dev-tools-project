@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-12, by the orchestrator session (#13 merged; Render logs check pending)
+**Last updated:** 2026-11-12, by the orchestrator session (#13 closed: OpenTelemetry + JSON logs live on dev)
 
 ## Current state
 
@@ -26,18 +26,19 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 - #10 (CI workflow): groomed, approved by David (with `bandit` and `pip-audit`), implemented on `10-ci`, **QA: PASS**, PR #37 merged into `main` with David's OK and green CI. #10 is closed, branch deleted. CI on the push to `main` green (run 42515414360). `make security` (bandit on backend/frontend, medium+; pip-audit), `.github/workflows/ci.yml` (one job: `make install`, `lint`, `security`, `test`, `build`; on every PR and pushes to `main`/`prod`; no secrets; pinned actions; concurrency cancel), `make ci-local` with `act` (`TEST_DB_HOST=host.docker.internal`), docs say PRs merge only with green CI + QA PASS. Red-path check: throwaway PR #38 failed at Lint, later steps skipped; closed and branch deleted.
 - #11 (Render + CD to dev): approved by David (dev on Render's free Postgres, prod on Neon in #12), PRs #39 (blueprint + CD), #40 (frontend retries) and #41 (the browser wakes the backend) merged with green CI and David's OK. **QA: PASS**, #11 closed. Dev: frontend https://para-luego-dev-frontend.onrender.com, backend https://para-luego-dev-backend.onrender.com; every green push to `main` deploys there (`cd-dev.yml`). Free-plan lesson: calls from one Render service never wake a sleeping free service, so the browser wakes the backend (`BACKEND_PUBLIC_URL`, `_wake.html`). See `_docs/deploy.md`. **Dev database expires 2026-12-08.**
 - #12 (prod deploy, rollback, promote-prod): approved by David, PRs #44 and #45 merged with green CI and David's OK; first release PR #46 merged by David. **QA: PASS**, #12 closed. **Prod:** frontend https://para-luego-prod-frontend.onrender.com, backend https://para-luego-prod-backend.onrender.com, database on Neon free; Blueprint `render.prod.yaml` on branch `prod`. Release: `make promote-prod` → David merges with **Create a merge commit** → Deploy prod deploys the image dev ran. Rollback: the Rollback workflow or `make rollback ENV TAG`. `prod` is protected (PR + CI check); `main` isn't. QA test users: `qa12proda2d876` (prod), `qa12deva2d876` (dev). Follow-ups #42 (rollback across migrations), #43 (dev database expiry).
+- #13 (OpenTelemetry + JSON logs): approved by David with six OpenTelemetry dependencies, PR #47 merged with green CI and David's OK. **QA: PASS**, #13 closed. Shared `telemetry/` package; one trace frontend → backend → DB; JSON logs with trace ids on dev (checked in Render's logs: frontend `POST /items` and backend `item saved` share the trace id). No export on Render (no `OTEL_EXPORTER_OTLP_ENDPOINT`). Test user `qa13devac633c` on dev.
 - `/` now calls `getMe` and then `getDaily`; frontend test fakes that serve `/` must answer `/api/daily`.
 - Deadline: **Friday 2026-11-13** (Costa Rica time). Peer reviews of three other projects are also required to pass.
 
 ## In progress
 
-- #13 (OpenTelemetry + JSON logs): PR #47 merged (`36d0d0c`) with David's OK; CI and CD dev green; dev reports `36d0d0c`. The merge auto-closed #13; **reopened**. Dev flow works as before (register, Daily, save, WhatsApp link, Copiar button, delete, "Backend: ok (dev)"; test user `qa13devac633c`). **Pending:** someone signed in to Render checks that both dev services' logs are JSON lines with `trace_id` (the built-in browser isn't signed in to Render). Then final `## QA` on #13.
+- Nothing.
 
 ## Next up
 
-1. Render logs check for #13 (David, or David signs in to Render in the browser pane), then final `## QA: PASS` on #13 and close it.
-2. #14 (observability stack in Compose) sets `OTEL_EXPORTER_OTLP_ENDPOINT` in Compose and ships stdout logs to Loki.
-3. #43 before 2026-12-08.
+1. Groom #14 (observability stack in Compose: OTel Collector, Prometheus, Tempo, Loki, Grafana + dashboard). It sets `OTEL_EXPORTER_OTLP_ENDPOINT` for the Compose services and ships the JSON stdout logs to Loki; the metric names are in `_docs/plan.md` section 6.
+2. Then #15 (alerts), #16 (MCP server), #17 (responder), #18 (admin panel), #19 (demo bug), #20 (README).
+3. #43 before 2026-12-08 (dev database expires).
 - Deadline Friday 2026-11-13 (Costa Rica). Don't push to `main` while waiting for services to sleep.
 
 ## Decisions
