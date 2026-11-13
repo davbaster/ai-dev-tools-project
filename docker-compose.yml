@@ -3,7 +3,9 @@
 name: para-luego
 
 x-app-image: &app-image
-  build: .
+  build:
+    context: .
+    target: app
   image: para-luego-app
 
 services:
@@ -88,6 +90,37 @@ services:
       - "127.0.0.1:${MCP_PORT:-8090}:8090"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8090/health', timeout=2)"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  # Responder de guardia (#17): recibe el webhook de Grafana (#15), abre el
+  # incidente, investiga con el servidor MCP y pushea un arreglo o pide un humano.
+  # Las claves reales (GITHUB_TOKEN, LLM_API_KEY) van solo en tu .env local.
+  oncall-agent:
+    build:
+      context: .
+      target: agent
+    image: para-luego-agent
+    environment:
+      DEPLOYMENT: ${DEPLOYMENT:-local}
+      ALERT_WEBHOOK_TOKEN: ${ALERT_WEBHOOK_TOKEN:-change_me_local_only}
+      MCP_URL: http://mcp-server:8090/mcp
+      MCP_TOKEN: ${MCP_TOKEN:-change_me_local_only}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      GITHUB_REPOSITORY: ${GITHUB_REPOSITORY:-davbaster/ai-dev-tools-project}
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.openai.com/v1}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-gpt-6-luna}
+      RESPONDER_ALLOW_PUSH: ${RESPONDER_ALLOW_PUSH:-false}
+      RESPONDER_TARGET_BRANCH: ${RESPONDER_TARGET_BRANCH:-main}
+      REPO_ROOT: /repo
+    volumes:
+      - .:/repo:ro
+    ports:
+      - "127.0.0.1:${RESPONDER_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health', timeout=2)"]
       interval: 3s
       timeout: 3s
       retries: 20

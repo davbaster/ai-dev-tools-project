@@ -48,7 +48,7 @@ It is a course final project and a **proof of concept**: keep everything simple,
 | `tests/integration/` | Tests against a real Postgres (Docker). |
 | `tests/frontend/` | Tests of the rendered pages and user flows, with the backend faked from the contract. |
 | `tests/contract/` | Backend routes and the frontend client checked against `api/openapi.yaml`. |
-| `oncall/agent/` | Responder agent: receives alerts, investigates, pushes a fix to `main` (dev) or escalates. |
+| `oncall/agent/` | Responder agent (`oncall-agent` in Compose, Dockerfile target `agent`): receives Grafana's webhook, opens the `incident` issue, investigates with the MCP tools through an OpenAI-compatible LLM, pushes a fix to `main` (dev) + prod PR, or labels `needs-human`. `README.md` has the flow and config. |
 | `oncall/mcp_server/` | MCP server with the read-only on-call tools (`get_recent_logs`, `query_metrics`, `check_health`, `read_source_file`), redaction and audit log. `README.md` explains tools, auth and how to connect a client. |
 | `observability/` | OpenTelemetry Collector, Prometheus, Tempo, Loki and Grafana config (dashboards + alert rules). `README.md` explains the data flow and URLs. |
 | `.github/workflows/` | CI, CD to dev (on `main`), deploy to prod (on `prod`), rollback. |
@@ -79,6 +79,7 @@ The root `Makefile` is the single entry point, and CI calls the same targets. Pl
 - `make wait-image TAG=<sha>` / `make retag ENV=<dev|prod> TAG=<sha>` / `make promoted-sha REF=<commit>` - deploy helpers: wait for an image on GHCR, move `:dev`/`:prod` to it, find the `main` commit a `prod` merge promotes
 - `make mcp` - run the MCP server outside Docker on 127.0.0.1:8090 (needs `MCP_TOKEN`; `make up` already runs it as `mcp-server`)
 - `make mcp-audit` - print the last 50 entries of the MCP server's audit log
+- `make responder-logs` - follow the on-call responder's logs (`oncall-agent`, #17)
 - `make ci-local` - run `.github/workflows/ci.yml` locally with `act` (Docker image `catthehacker/ubuntu:act-latest`; the throwaway test database is reached as `host.docker.internal` through `TEST_DB_HOST`)
 - `make promote-prod` - open the PR from `main` to `prod` with `gh` (production deploys when a human merges it with "Create a merge commit"); prints the open one if it exists
 - `make rollback ENV=<dev|prod> TAG=<full sha>` - redeploy a previous image (or the **Rollback** workflow); refuses a bad env, SHA, missing image or missing hooks before touching anything

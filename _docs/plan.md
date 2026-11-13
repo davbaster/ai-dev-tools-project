@@ -96,6 +96,8 @@ Each alert's webhook goes to the responder. Grafana alerting, provisioned from f
 4. If the cause is found in code, writes a minimal fix plus a test and **pushes it directly to `main`**. CI runs; if green, CD deploys to **dev** and the alert resolves. It then opens a PR from `main` to `prod`; a human merges it to deploy to production.
 5. If not, labels the incident `needs-human`, writes what it checked, and shows it in the admin panel.
 
+Implementation (#17): `oncall/agent/` (Compose `oncall-agent`). Fixes are checked with ruff and the non-Docker suites on a copy of the repo before a commit through the GitHub API; `RESPONDER_ALLOW_PUSH` (off by default) enables pushing. See `oncall/agent/README.md`.
+
 Demo bug: a feature-flagged defect (for example `BUG_SAVE_ITEM=1` makes backend `POST /api/items` raise on long titles) that the responder can find and fix.
 
 ## 9. Testing (proof-of-concept level)
