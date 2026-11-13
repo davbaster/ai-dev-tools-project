@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-13, by the orchestrator session (#17: QA PASS, PR #51 green, waiting for David's OK)
+**Last updated:** 2026-11-13, by the orchestrator session (#17 closed: on-call responder merged)
 
 ## Current state
 
@@ -30,21 +30,22 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 - #14 (local observability): approved by David, PR #48 merged with green CI and David's OK. **QA: PASS**, #14 closed. `make up` also runs the OTel Collector, Prometheus, Tempo, Loki and Grafana (http://localhost:3000, dashboard "Para Luego"); see `observability/README.md`. Dev on Render unchanged (reports `b426e20`).
 - #15 (alerts + webhook): approved by David, PR #49 merged with green CI and David's OK. **QA: PASS**, #15 closed. Grafana rules SaveItemFailing and HighServerErrors; webhook to `ALERT_WEBHOOK_URL` (default `http://oncall-agent:8080/alerts`) with a bearer token; payload and how to trigger them in `observability/README.md`. Dev reports `2a880c1`.
 - #16 (MCP server): approved by David with `mcp`, PR #50 merged with green CI and David's OK. **QA: PASS**, #16 closed. `make up` runs `mcp-server` at http://127.0.0.1:8090/mcp (bearer `MCP_TOKEN`) with four read-only tools, redaction and an audit log (`make mcp-audit`); see `oncall/mcp_server/README.md`. Dev reports `2b909c5`.
+- #17 (on-call responder): approved by David, PR #51 merged with green CI and David's OK. **QA: PASS** (live, with David's keys), #17 closed. `make up` runs `oncall-agent` (127.0.0.1:8080): Grafana webhook → `incident` issue → LLM investigation with the MCP tools → fix commit `Fixes #n` + prod PR, or `needs-human`. Push is off by default (`RESPONDER_ALLOW_PUSH`). See `oncall/agent/README.md`. Dev reports `5e5d035`.
 - `/` now calls `getMe` and then `getDaily`; frontend test fakes that serve `/` must answer `/api/daily`.
 - Deadline: **Friday 2026-11-13** (Costa Rica time). Peer reviews of three other projects are also required to pass.
 
 ## In progress
 
-- #17 (on-call responder): **PR #51** (`Refs #17`), CI green at `3407b3d`, **`## QA: PASS`** on #17 after the live QA with David's keys (escalation path #54/#55; fix path against throwaway branches #60/#61, auto-closed on resolve; branches deleted). **Waiting for David's OK to merge**; then close #17 by hand (`Refs`).
-- QA fixes in the PR: `LLM_REASONING_EFFORT=none` (OpenAI tools + reasoning), auto `ruff format` of proposed files, search/replace edits for existing files (no `[REDACTED]` copied into code).
-- David's local `.env`: `RESPONDER_ALLOW_PUSH=false`, `RESPONDER_TARGET_BRANCH=main` (restored); `POSTGRES_PASSWORD`/`DATABASE_URL` aligned to the existing volume (`para_luego_local`, see #63).
-- Follow-ups filed: #62 (one cause → two incidents), #63 (`.env.example` Postgres password).
+- Nothing.
 
 ## Next up
 
-1. David's OK → merge PR #51 → close #17.
-2. #19 (demo bug behind a flag + end-to-end demo) and #18 (admin panel + cloud responder), then #20 (README). #43 before 2026-12-08.
-- Deadline Friday 2026-11-13 (Costa Rica). Don't push to `main` while waiting for services to sleep.
+Deadline is **today, Friday 2026-11-13** (Costa Rica). Remaining seed issues, in the order that matters for the course:
+1. **#19** (demo bug behind a flag + end-to-end incident demo): plan section 12 step 3-4; the pieces all exist now (alerts #15, MCP #16, responder #17). The responder needs `RESPONDER_ALLOW_PUSH=true` and target `main` for the real demo.
+2. **#20** (README: problem, usage, local run, deploy, demo script): required by the course.
+3. **#18** (admin panel + cloud demo mode): largest remaining piece; consider scoping it down with David.
+- Follow-ups in backlog: #26, #28-#30, #33, #42, #43 (dev DB expires 2026-12-08), #62, #63.
+- Don't push to `main` while waiting for services to sleep.
 
 ## Decisions
 
