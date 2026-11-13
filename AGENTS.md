@@ -50,7 +50,7 @@ It is a course final project and a **proof of concept**: keep everything simple,
 | `tests/contract/` | Backend routes and the frontend client checked against `api/openapi.yaml`. |
 | `oncall/agent/` | Responder agent: receives alerts, investigates, pushes a fix to `main` (dev) or escalates. |
 | `oncall/mcp_server/` | MCP server with the on-call tools. |
-| `observability/` | OpenTelemetry Collector, Prometheus, Tempo, Loki and Grafana config (dashboards + alert rules). |
+| `observability/` | OpenTelemetry Collector, Prometheus, Tempo, Loki and Grafana config (dashboards + alert rules). `README.md` explains the data flow and URLs. |
 | `.github/workflows/` | CI, CD to dev (on `main`), deploy to prod (on `prod`), rollback. |
 | `docker-compose.yml` | The full local system. |
 | `render.yaml` / `render.prod.yaml` | Render blueprints: dev (synced from `main`) and prod (synced from `prod`). |
@@ -64,7 +64,7 @@ Some folders don't exist until their backlog task creates them.
 The root `Makefile` is the single entry point, and CI calls the same targets. Plain `make` lists every target. Variables go after the target (`make test-integration TEST_DATABASE_URL=<url>`). A failing command stops `make` with a non-zero exit code.
 
 - `make install` - install dependencies (uv)
-- `make up` / `make down` - start / stop the full local system (frontend, backend, Postgres, observability stack, on-call agent, MCP server)
+- `make up` / `make down` - start / stop the full local system (frontend, backend, Postgres, observability stack, on-call agent, MCP server). Grafana http://localhost:3000 (dashboard "Para Luego"), Prometheus :9090, Tempo :3200, Loki :3100, all on 127.0.0.1 (`observability/README.md`)
 - `make logs` - follow the frontend and backend logs
 - `make lint` - ruff (lint + format check)
 - `make security` - bandit (backend, frontend and telemetry, medium severity and above) + pip-audit (installed dependencies); an ignored finding goes in `PIP_AUDIT_IGNORE` with its ID and the reason

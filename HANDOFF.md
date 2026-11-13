@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-12, by the orchestrator session (#14 groomed, waiting for David's review)
+**Last updated:** 2026-11-12, by the orchestrator session (#14: PR #48 green CI + QA PASS, waiting for David's OK)
 
 ## Current state
 
@@ -32,13 +32,14 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 
 ## In progress
 
-- #14 (observability stack): **groomed** by the PM (label `groomed`), waiting for David's review. Proposal: Compose services `otel-collector`, `prometheus`, `tempo`, `loki`, `grafana` (pinned images, ports on 127.0.0.1); apps get `OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318`; collector → Tempo (traces), `prometheus` exporter scraped by Prometheus (metrics), `filelog` on Docker's json-file logs (read-only mount) → Loki (logs); Grafana provisioned with datasources, trace_id links and a "Para Luego" dashboard. Decisions for David: filelog vs. Alloy for logs; the images.
+- #14 (observability stack): approved by David (logs via the collector's `file_log` receiver). Implemented on `14-observability`, **PR #48** (`Closes #14`), CI green, **`## QA: PASS`** on #14 (all criteria are local and were checked live). **Waiting for David's OK to merge.**
+- Adds Compose services `otel-collector`, `prometheus`, `tempo`, `loki`, `grafana` (pinned; UIs on 127.0.0.1), `observability/` configs + Grafana provisioning + "Para Luego" dashboard, `observability/README.md`. Small app change: duration histogram buckets in seconds (the p95 was wrong with OTel's ms defaults).
 
 ## Next up
 
-1. David reviews #14. On approval: branch `14-observability`, PR, CI, local live QA (dashboard, trace, logs ↔ trace links), merge with David's OK.
-2. Then #15 (alerts), #16 (MCP server), #17 (responder), #18 (admin panel), #19 (demo bug), #20 (README).
-3. #43 before 2026-12-08.
+1. David's OK → merge PR #48 (CD to dev changes nothing visible: Render exports nothing).
+2. #15 (alert rules on user impact + webhook to the responder): the dashboard's two error panels already hold the expressions (`observability/grafana/dashboards/para-luego.json`).
+3. Then #16 (MCP server), #17 (responder), #18 (admin panel), #19 (demo bug), #20 (README). #43 before 2026-12-08.
 - Deadline Friday 2026-11-13 (Costa Rica). Don't push to `main` while waiting for services to sleep.
 
 ## Decisions
@@ -101,6 +102,8 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 | 2026-11-12 | Telemetry setup in a shared top-level `telemetry/` package (copied by the Dockerfile) | Same code for both services without the frontend importing `backend/` |
 | 2026-11-12 | DB spans with the SQLAlchemy package's `EngineTracer` per engine, not `SQLAlchemyInstrumentor().instrument()` | The instrumentor declares support only below SQLAlchemy 2.1 and its global patch imports asyncio, which needs `greenlet` |
 | 2026-11-12 | Own request metrics and access log (route template, `unmatched` for 404s); the instrumentations' HTTP metrics and uvicorn's access log off; `httpx` logger at WARNING | Raw paths, client IPs and full URLs must never reach telemetry |
+| 2026-11-12 | #14: logs reach Loki through the collector's `file_log` receiver on Docker's json-file logs (read-only mount, collector as root); Loki label is `service_name` | David's choice over Alloy + Docker socket; Loki's OTLP ingestion names it `service_name` |
+| 2026-11-12 | Observability UIs on 127.0.0.1, Grafana anonymous Editor locally, no volumes; `OTEL_METRIC_EXPORT_INTERVAL=10000` in Compose | Local demo only; dashboards update within seconds |
 | 2026-11-11 | `main` stays unprotected; `prod` requires a PR (0 approvals) and the CI check | The responder pushes fixes straight to `main`; David merges his own release PRs |
 | 2026-11-08 | #12 (approved by David): prod in its own Blueprint `render.prod.yaml` on branch `prod`; deploy-prod deploys the promoted `main` image (no rebuild) and moves `:prod` | Render's `imgURL` affects only one deploy and later deploys use the stored tag; a Blueprint on `main` would change prod on every merge to `main` and syncs ignore `sync: false` |
 | 2026-11-08 | #11: the browser wakes the sleeping Render backend (`BACKEND_PUBLIC_URL`); server-side retries only 5 s | Render's logs showed calls from the frontend service never wake a free backend; only internet traffic does |

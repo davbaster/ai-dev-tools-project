@@ -1,0 +1,76 @@
+# OpenTelemetry Collector (#14): one entry point for the app's telemetry.
+# - traces (OTLP from both services) -> Tempo
+# - metrics (OTLP) -> prometheus exporter, scraped by Prometheus
+# - logs: the apps print JSON to stdout; file_log reads Docker's json-file logs
+#   (mounted read-only), keeps only the app's lines and sends them to Loki.
+
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+
+  file_log:
+    include: [/var/lib/docker/containers/*/*-json.log]
+    # No replay of old logs on every restart.
+    start_at: end
+    operators:
+      # Docker's wrapper: {"log": "<line>\n", "stream": "stdout", "time": "..."}.
+      - type: json_parser
+        id: docker
+      - type: move
+        from: attributes.log
+        to: body
+      # Only the app's JSON lines (#13), never Postgres, Grafana, etc.
+      - type: filter
+        expr: 'not (body matches "\"service\": \"para-luego-")'
+      - type: json_parser
+        id: app
+        parse_from: body
+        parse_to: attributes
+        timestamp:
+          parse_from: attributes.timestamp
+          layout_type: gotime
+          layout: "2006-01-02T15:04:05.000Z"
+        severity:
+          parse_from: attributes.level
+      - type: trace_parser
+        trace_id:
+          parse_from: attributes.trace_id
+        span_id:
+          parse_from: attributes.span_id
+      # Loki indexes service.name as the service_name label.
+      - type: move
+        from: attributes.service
+        to: resource["service.name"]
+      # Small structured metadata: the full JSON line stays in the body.
+      - type: retain
+        fields: [attributes.logger, attributes.level, attributes.trace_id]
+
+processors:
+  batch: {}
+
+exporters:
+  otlp_grpc/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+  prometheus:
+    endpoint: 0.0.0.0:8889
+  otlp_http/loki:
+    endpoint: http://loki:3100/otlp
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp_grpc/tempo]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [prometheus]
+    logs:
+      receivers: [file_log]
+      processors: [batch]
+      exporters: [otlp_http/loki]

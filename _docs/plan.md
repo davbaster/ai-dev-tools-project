@@ -77,7 +77,7 @@ Render runs the frontend, the backend and Postgres. The admin panel acts as a mi
 - Every request (both services): counter `http.requests` (Prometheus `http_requests_total`) and histogram `http.server.request.duration` in seconds, attributes `route` (the **route template**, never the raw path; `unmatched` for 404s), `method`, `status`. Backend counter `items.saved` (`items_saved_total`). Health checks are counted but make no spans or access lines.
 - Setup lives in `telemetry/` (#13). Export over OTLP/HTTP only when `OTEL_EXPORTER_OTLP_ENDPOINT` is set (locally, #14); Render exports nothing but still logs JSON with trace ids.
 - **No customer data in telemetry:** no usernames, URLs, titles or notes; only ids.
-- Logs are JSON to stdout; the collector ships them to Loki. Grafana links a log line to its trace in Tempo by `trace_id`.
+- Logs are JSON to stdout; the collector ships them to Loki (its `file_log` receiver reads Docker's json-file logs, #14). Grafana links a log line to its trace in Tempo by `trace_id`, and a span back to its logs. Loki indexes `service_name`. Setup and URLs: `observability/README.md`.
 
 ## 7. Alerting on user impact
 
