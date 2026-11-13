@@ -92,7 +92,7 @@ Each alert's webhook goes to the responder. Grafana alerting, provisioned from f
 
 1. Wakes on an alert webhook (or the cloud threshold).
 2. Opens a GitHub issue labeled `incident`.
-3. Investigates with the MCP tools: `get_recent_logs`, `query_metrics`, `check_health`, `read_source_file`.
+3. Investigates with the MCP tools: `get_recent_logs`, `query_metrics`, `check_health`, `read_source_file` (read-only, redacted, audited; `oncall/mcp_server/README.md`, #16).
 4. If the cause is found in code, writes a minimal fix plus a test and **pushes it directly to `main`**. CI runs; if green, CD deploys to **dev** and the alert resolves. It then opens a PR from `main` to `prod`; a human merges it to deploy to production.
 5. If not, labels the incident `needs-human`, writes what it checked, and shows it in the admin panel.
 

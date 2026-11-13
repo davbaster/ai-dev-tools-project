@@ -70,6 +70,28 @@ services:
       timeout: 3s
       retries: 20
 
+  # Servidor MCP con las herramientas de guardia (#16): solo lectura, con token.
+  mcp-server:
+    <<: *app-image
+    command: ["python", "-m", "oncall.mcp_server.server"]
+    environment:
+      DEPLOYMENT: ${DEPLOYMENT:-local}
+      MCP_TOKEN: ${MCP_TOKEN:-change_me_local_only}
+      MCP_AUDIT_LOG: /var/log/mcp/audit.jsonl
+      LOKI_URL: http://loki:3100
+      PROMETHEUS_URL: http://prometheus:9090
+      REPO_ROOT: /repo
+    volumes:
+      - .:/repo:ro
+      - mcp-audit:/var/log/mcp
+    ports:
+      - "127.0.0.1:${MCP_PORT:-8090}:8090"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8090/health', timeout=2)"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
   # --- Observabilidad local (#14) ---------------------------------------------
   # Sin volúmenes: los datos se pierden con `make down`. Las UIs escuchan solo en
   # 127.0.0.1. Configuración en observability/ (ver observability/README.md).
@@ -137,3 +159,4 @@ services:
 
 volumes:
   db-data:
+  mcp-audit:
