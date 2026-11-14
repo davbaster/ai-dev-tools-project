@@ -2,7 +2,7 @@
 
 Snapshot of where the work stands, so any session or any LLM can continue. **Overwrite this file** after every decision and every finished piece of work. History goes in `_docs/log/`.
 
-**Last updated:** 2026-11-14, by the orchestrator session (#73 README screenshots, PR open)
+**Last updated:** 2026-11-14, by the orchestrator session (#73 README screenshots merged)
 
 ## Current state
 
@@ -40,7 +40,7 @@ Snapshot of where the work stands, so any session or any LLM can continue. **Ove
 
 ## In progress
 
-- #73 README screenshots: branch `73-readme-screenshots`, PR #74 open, CI green, **QA: PASS** on #73; waiting for David's OK to merge. Images in `_docs/img/` (app, Grafana dashboard and trace, GitHub incident, Actions, release PR) plus three placeholders David can replace: WhatsApp on a phone, SaveItemFailing firing, `make demo-local` terminal.
+- #73 README screenshots: PR #74 merged with David's OK (`949b15d`), **QA: PASS**, #73 closed. Images in `_docs/img/` (app, Grafana dashboard and trace, GitHub incident, Actions, release PR) plus three placeholders David can replace: WhatsApp on a phone, SaveItemFailing firing, `make demo-local` terminal.
 - Nothing running. Prod PR #67 merged by David (`f4dd7c3`); Deploy prod green; prod frontend and backend report `ae4233e`. No PR open.
 - The local stack is stopped; `make up` brings `main` back.
 
