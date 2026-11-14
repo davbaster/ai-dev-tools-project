@@ -23,6 +23,14 @@ Both run on Render's free plan: after ~15 idle minutes a service sleeps, and the
 
 The UI is in Spanish.
 
+| Home: Tu Daily | Mis items (save, filter, share) | On a phone |
+|---|---|---|
+| ![Home with Tu Daily: one random item per category, each with WhatsApp and Copiar buttons](_docs/img/app-daily.png) | ![Items page: the save form, category filters and the saved items](_docs/img/app-items.png) | ![The items page at phone width](_docs/img/app-mobile.png) |
+
+![Placeholder: WhatsApp opened from an item with the prefilled message](_docs/img/placeholder-whatsapp.png)
+
+Screenshots are from the local stack with test data (`_docs/img/`).
+
 ## Architecture
 
 ```mermaid
@@ -111,11 +119,27 @@ make promote-prod → PR main → prod → a human merges → CI → Deploy prod
 - Rollback: the **Rollback** workflow or `make rollback ENV=<dev|prod> TAG=<sha>`.
 - `prod` is protected (PR + CI); production only changes through a human-merged PR.
 
+![GitHub Actions: CI, CD dev and Deploy prod runs, all green](_docs/img/gh-actions.png)
+
+*Every push to `main` runs CI and then CD dev; merging to `prod` runs Deploy prod.*
+
+![Release PR #67, main to prod, merged by a human](_docs/img/gh-prod-pr.png)
+
+*A release: the PR `main` → `prod` ([#67](https://github.com/davbaster/ai-dev-tools-project/pull/67)), merged by a human.*
+
 Details, Render's free-plan limits and the one-time setup: [`_docs/deploy.md`](_docs/deploy.md).
 
 ## Observability and on-call
 
 **Observability.** Every log line is JSON with `trace_id` and `span_id`. Saving an item is one trace from the frontend through the backend to the database. Metrics are labeled by route template (never raw paths), and no customer data reaches telemetry: no usernames, URLs, titles or notes. Grafana links a log line to its trace and back. Two alerts watch what users feel: **SaveItemFailing** and **HighServerErrors** (5xx over 5% in 5 minutes). This runs locally; Render exports nothing. → [`observability/README.md`](observability/README.md)
+
+![Grafana dashboard "Para Luego": alert state, requests per second by route template and status, save-item error rate and 5xx share](_docs/img/grafana-dashboard.png)
+
+*The "Para Luego" dashboard: alert state, traffic by route template and status, and the two error rates the alerts watch.*
+
+![One save in Tempo: frontend POST /items, backend POST /api/items and its SQL spans](_docs/img/grafana-trace.png)
+
+*Saving an item is one trace: frontend → backend → Postgres (the SQL spans carry no data).*
 
 **On-call.** Grafana's alert webhook wakes the **responder**, which:
 
@@ -124,6 +148,10 @@ Details, Render's free-plan limits and the one-time setup: [`_docs/deploy.md`](_
 3. either pushes a minimal fix plus a test to `main`, after running ruff and the tests on a copy of the repo, and opens the PR to `prod`; or labels the incident `needs-human` with what it checked.
 
 It never merges, deploys or restarts anything. Pushing is off unless `RESPONDER_ALLOW_PUSH=true`. You can also connect your own MCP client, e.g. Claude Code, to the same tools. → [`oncall/mcp_server/README.md`](oncall/mcp_server/README.md), [`oncall/agent/README.md`](oncall/agent/README.md)
+
+![Incident #65 opened by the responder: the firing alerts, then its comment with cause, evidence and the fix as a diff](_docs/img/gh-incident.png)
+
+*A real incident from the demo ([#65](https://github.com/davbaster/ai-dev-tools-project/issues/65)): the responder opened it from the alert, found the cause in the logs and code, and pushed the fix.*
 
 ## Demo
 
@@ -141,6 +169,10 @@ In ~6-8 minutes, with nothing but Docker, uv, git and make (no accounts, no keys
 4. It fixes the code, runs ruff and the tests on a copy, and writes the fix (`demo-output/fix-1.diff`).
 5. The backend is rebuilt with the fix, the alert resolves and the incident closes.
 6. The release step is a **draft PR to prod** (`demo-output/prod-pr-1.md`): in the real flow a human reviews and merges it.
+
+![Placeholder: Grafana with SaveItemFailing firing during the demo](_docs/img/placeholder-alert-firing.png)
+
+![Placeholder: the terminal at the end of make demo-local](_docs/img/placeholder-demo-local.png)
 
 Nothing is pushed, deployed or changed in your checkout. With your own `LLM_API_KEY` in `.env` the investigation is live; without one, the responder replays a recorded real investigation and says so (the tools, checks and fix still run on your machine). `make demo-local-clean` removes everything.
 
